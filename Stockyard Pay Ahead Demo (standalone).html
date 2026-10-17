@@ -1379,7 +1379,7 @@ svg.plan { width: 100%; height: auto; display: block; }
       const scene = new T3.Scene();
       scene.background = new T3.Color(0xe9edf2);
       scene.fog = new T3.Fog(0xe9edf2, 9, 20);
-      const camera = new T3.PerspectiveCamera(50, 0.6, 0.1, 60);
+      const camera = new T3.PerspectiveCamera(50, 0.6, 0.5, 40);
       const std = (color, rough = 0.75, metal = 0) => new T3.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
       const mesh = (geo, mat, cast = true, recv = true) => { const m = new T3.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = recv; return m; };
       const tex = (w, h, draw) => { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new T3.CanvasTexture(c); t.encoding = T3.sRGBEncoding; t.anisotropy = 4; return t; };
@@ -1401,7 +1401,7 @@ svg.plan { width: 100%; height: auto; display: block; }
       scene.add(new T3.HemisphereLight(0xf4f7ff, 0xa9b1bd, 0.7));
       const sun = new T3.DirectionalLight(0xfff3e4, 0.95);
       sun.position.set(2.5, 7, 5); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
-      sun.shadow.bias = -0.0005; sun.shadow.radius = 5;
+      sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.02; sun.shadow.radius = 5;
       Object.assign(sun.shadow.camera, { left: -5, right: 5, top: 7, bottom: -4, near: 1, far: 20 });
       scene.add(sun);
       const fill = new T3.DirectionalLight(0xdbe6ff, 0.3); fill.position.set(-4, 3, 2); scene.add(fill);
@@ -1411,8 +1411,11 @@ svg.plan { width: 100%; height: auto; display: block; }
         gr.addColorStop(0, "rgba(20, 28, 40, .42)"); gr.addColorStop(1, "rgba(20, 28, 40, 0)");
         g.fillStyle = gr; g.fillRect(0, 0, w, h);
       });
-      const blobMat = new T3.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false });
+      const blobMat = new T3.MeshBasicMaterial({ map: blobTex, transparent: true });
       const blobGeo = new T3.PlaneGeometry(0.75, 0.75);
+      // Floor markings stack in fixed layers so they never fight each other or the floor.
+      const decal = (mat, layer) => { mat.depthWrite = false; mat.polygonOffset = true; mat.polygonOffsetFactor = -1; mat.polygonOffsetUnits = -4 * layer; return mat; };
+      decal(blobMat, 4);
 
       // floor with large tiles, back wall, pharmacy sign
       const floorTex = tex(512, 512, (g, w, h) => {
@@ -1430,7 +1433,7 @@ svg.plan { width: 100%; height: auto; display: block; }
       const wall = mesh(new T3.PlaneGeometry(30, 10), std(0xe9ebee, 1), false, true);
       wall.position.set(0, 5, -2.7); scene.add(wall);
       const band = new T3.Mesh(new T3.PlaneGeometry(30, 0.32), new T3.MeshBasicMaterial({ color: 0x1d4f9a }));
-      band.position.set(0, 3.5, -2.69); scene.add(band);
+      band.position.set(0, 3.5, -2.67); scene.add(band);
       // warehouse pallet racking: blue uprights, orange beams, stacked cartons
       const upr = std(0x1d4f9a, 0.55, 0.2), beam = std(0xe8742a, 0.5, 0.2);
       const carton = [std(0xc9a26b, 0.95), std(0xb88f58, 0.95), std(0xe9e6df, 0.8)];
@@ -1457,7 +1460,7 @@ svg.plan { width: 100%; height: auto; display: block; }
         g.fillStyle = "#c4302b"; g.font = '800 50px "Barlow Condensed", sans-serif'; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("Rx", 470, h / 2 + 2);
         g.fillStyle = "#ffffff"; g.font = '800 86px "Barlow Condensed", "Arial Narrow", sans-serif'; g.textAlign = "left"; g.fillText("PHARMACY", 535, h / 2 + 4);
       }) }));
-      fasciaFace.position.set(0, 2.78, -1.879); scene.add(fasciaFace);
+      fasciaFace.position.set(0, 2.78, -1.868); scene.add(fasciaFace);
       [-2.45, 2.45].forEach(x => { const col = mesh(new T3.BoxGeometry(0.18, 2.8, 0.18), std(0xf4f5f7, 0.7)); col.position.set(x, 1.4, -1.95); scene.add(col); });
       for (let k = 0; k < 3; k++) { // shelves of filled prescriptions behind the counter
         const shelf = mesh(new T3.BoxGeometry(4.4, 0.05, 0.4), std(0xcfd5dd)); shelf.position.set(0, 1.15 + k * 0.38, -2.45); scene.add(shelf);
@@ -1470,7 +1473,7 @@ svg.plan { width: 100%; height: auto; display: block; }
       // counter
       const counter = mesh(new T3.BoxGeometry(4.6, 0.66, 0.6), std(0xf2f3f5, 0.6)); counter.position.set(0, 0.33, -1.5); scene.add(counter);
       const panel = mesh(new T3.BoxGeometry(4.62, 0.3, 0.02), std(0xc4302b, 0.5)); panel.position.set(0, 0.47, -1.19); scene.add(panel);
-      const kick = mesh(new T3.BoxGeometry(4.6, 0.08, 0.56), std(0x6b7280, 0.7)); kick.position.set(0, 0.04, -1.48); scene.add(kick);
+      const kick = mesh(new T3.BoxGeometry(4.64, 0.08, 0.64), std(0x6b7280, 0.7)); kick.position.set(0, 0.04, -1.5); scene.add(kick);
       const top = mesh(new T3.BoxGeometry(4.8, 0.05, 0.78), std(0xffffff, 0.35)); top.position.set(0, 0.685, -1.5); scene.add(top);
       [-1.7, 0, 1.7].forEach(x => { const div = mesh(new T3.BoxGeometry(0.04, 0.48, 0.66), std(0xf7f8fa, 0.5)); div.position.set(x, 0.95, -1.5); scene.add(div); }); // privacy dividers
 
@@ -1492,7 +1495,7 @@ svg.plan { width: 100%; height: auto; display: block; }
         const legs = mesh(legGeo, flat(pick(PANTS), 0.9)); legs.position.y = 0.24; g.add(legs);
         const body = mesh(bodyGeo, flat(shirt, 0.85)); body.position.y = 0.46; g.add(body);
         const head = mesh(headGeo, flat(pick(SKINS), 0.7)); head.position.y = 1.14; g.add(head);
-        const blob = new T3.Mesh(blobGeo, blobMat); blob.rotation.x = -Math.PI / 2; blob.position.y = 0.005; g.add(blob);
+        const blob = new T3.Mesh(blobGeo, blobMat); blob.rotation.x = -Math.PI / 2; blob.position.y = 0.024; blob.renderOrder = 4; g.add(blob);
         g.scale.setScalar(0.95 + rnd() * 0.1);
         scene.add(g);
         return g;
@@ -1506,19 +1509,19 @@ svg.plan { width: 100%; height: auto; display: block; }
       // lanes: colored floor tape, floor lettering, hanging signs
       [[LANES.go, 0x1d9a52, "PAY AHEAD", "Already paid", "#1d9a52", "#ffffff"], [LANES.wait, 0xe0ac00, "REGULAR PICKUP", "Pay at the counter", "#e0ac00", "#2a2100"]].forEach(([L, col, label, sub, bg, fg]) => {
         [-0.5, 0.5].forEach(dx => {
-          const tape = mesh(new T3.PlaneGeometry(0.08, 7.4), new T3.MeshStandardMaterial({ color: col, roughness: 0.6 }), false, true);
-          tape.rotation.x = -Math.PI / 2; tape.position.set(L.x + dx, 0.004, 2.5); scene.add(tape);
+          const tape = mesh(new T3.PlaneGeometry(0.08, 7.4), decal(new T3.MeshStandardMaterial({ color: col, roughness: 0.6 }), 1), false, true);
+          tape.rotation.x = -Math.PI / 2; tape.position.set(L.x + dx, 0.012, 2.5); tape.renderOrder = 1; scene.add(tape);
         });
-        const stop = mesh(new T3.PlaneGeometry(1.0, 0.08), new T3.MeshStandardMaterial({ color: col, roughness: 0.6 }), false, true);
-        stop.rotation.x = -Math.PI / 2; stop.position.set(L.x, 0.004, ZW - 0.32); scene.add(stop);
-        const waitTxt = new T3.Mesh(new T3.PlaneGeometry(1.0, 0.26), new T3.MeshBasicMaterial({ map: signTex("PLEASE WAIT HERE", "rgba(0,0,0,0)", bg, 700, 180, 120), transparent: true }));
-        waitTxt.rotation.x = -Math.PI / 2; waitTxt.position.set(L.x, 0.006, ZW - 0.56); scene.add(waitTxt);
-        const words = new T3.Mesh(new T3.PlaneGeometry(0.9, 0.3), new T3.MeshBasicMaterial({ map: signTex(label.replace(" PICKUP", ""), "rgba(0,0,0,0)", bg, 600, 200, 130), transparent: true }));
-        words.rotation.x = -Math.PI / 2; words.position.set(L.x, 0.006, 2.2); scene.add(words);
+        const stop = mesh(new T3.PlaneGeometry(1.0, 0.08), decal(new T3.MeshStandardMaterial({ color: col, roughness: 0.6 }), 2), false, true); stop.renderOrder = 2;
+        stop.rotation.x = -Math.PI / 2; stop.position.set(L.x, 0.016, ZW - 0.32); scene.add(stop);
+        const waitTxt = new T3.Mesh(new T3.PlaneGeometry(1.0, 0.26), decal(new T3.MeshBasicMaterial({ map: signTex("PLEASE WAIT HERE", "rgba(0,0,0,0)", bg, 700, 180, 120), transparent: true }), 3)); waitTxt.renderOrder = 3;
+        waitTxt.rotation.x = -Math.PI / 2; waitTxt.position.set(L.x, 0.02, ZW - 0.56); scene.add(waitTxt);
+        const words = new T3.Mesh(new T3.PlaneGeometry(0.9, 0.3), decal(new T3.MeshBasicMaterial({ map: signTex(label.replace(" PICKUP", ""), "rgba(0,0,0,0)", bg, 600, 200, 130), transparent: true }), 3)); words.renderOrder = 3;
+        words.rotation.x = -Math.PI / 2; words.position.set(L.x, 0.02, 2.2); scene.add(words);
         const frame = mesh(new T3.BoxGeometry(1.48, 0.64, 0.05), std(0x2b313b, 0.45, 0.3), true, false);
         frame.position.set(L.x, 2.15, -0.98); scene.add(frame);
         const board = new T3.Mesh(new T3.PlaneGeometry(1.4, 0.56), new T3.MeshBasicMaterial({ map: sign2Tex(label, sub, bg, fg, 700, 280), toneMapped: false }));
-        board.position.set(L.x, 2.15, -0.953); scene.add(board);
+        board.position.set(L.x, 2.15, -0.942); scene.add(board);
         [-0.55, 0.55].forEach(dx => { const wire = mesh(new T3.CylinderGeometry(0.006, 0.006, 1.2, 4), std(0x8a929e), false, false); wire.position.set(L.x + dx, 3.03, -0.95); scene.add(wire); });
       });
 
@@ -1528,7 +1531,7 @@ svg.plan { width: 100%; height: auto; display: block; }
         g.fillStyle = "#ffffff"; g.font = '800 46px "Atkinson Hyperlegible", sans-serif'; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("You", 80, 40);
       }), depthTest: false }));
       youLabel.scale.set(0.5, 0.25, 1); youLabel.renderOrder = 10;
-      const youRing = new T3.Mesh(geo.ring, new T3.MeshBasicMaterial({ color: 0xff7a00, transparent: true, opacity: 0.85 }));
+      const youRing = new T3.Mesh(geo.ring, decal(new T3.MeshBasicMaterial({ color: 0xff7a00, transparent: true, opacity: 0.85 }), 5)); youRing.renderOrder = 5;
       youRing.rotation.x = -Math.PI / 2;
 
       const bubbles = {};
@@ -1650,7 +1653,7 @@ svg.plan { width: 100%; height: auto; display: block; }
       p.g.position.set(p.x, moving ? Math.abs(Math.sin(p.phase)) * 0.02 : 0, p.z);
       if (p.isYou) {
         A.youLabel.position.set(p.x, 1.62, p.z);
-        A.youRing.position.set(p.x, 0.008, p.z);
+        A.youRing.position.set(p.x, 0.028, p.z);
         A.youRing.material.opacity = 0.55 + Math.sin(A.simT * 6) * 0.3;
       }
       return true;
@@ -1720,7 +1723,7 @@ svg.plan { width: 100%; height: auto; display: block; }
       const scene = new T3.Scene();
       scene.background = new T3.Color(0xe9edf2);
       scene.fog = new T3.Fog(0xe9edf2, 8, 16);
-      const camera = new T3.PerspectiveCamera(50, 0.5, 0.1, 60);
+      const camera = new T3.PerspectiveCamera(50, 0.5, 0.3, 40);
 
       const std = (color, rough = 0.7, metal = 0) => new T3.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
       const mesh = (geo, mat, cast = true, recv = true) => { const m = new T3.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = recv; return m; };
@@ -1742,7 +1745,7 @@ svg.plan { width: 100%; height: auto; display: block; }
       sun.position.set(2.5, 6, 4); sun.castShadow = true;
       sun.shadow.mapSize.set(1024, 1024);
       Object.assign(sun.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 15 });
-      sun.shadow.radius = 4;
+      sun.shadow.radius = 4; sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.02;
       scene.add(sun);
       const flash = new T3.PointLight(0x2fe07a, 0, 3);
       flash.position.set(0.15, 1.7, 0.5); scene.add(flash);
@@ -1803,9 +1806,9 @@ svg.plan { width: 100%; height: auto; display: block; }
       phone.add(shell);
       const screenMat = new T3.MeshBasicMaterial({ map: canvasTex(512, 1040, (g, w, h) => drawPass(g, w, h, false)) });
       const scr = new T3.Mesh(new T3.PlaneGeometry(0.58, 1.22), screenMat);
-      scr.position.z = 0.0365; phone.add(scr);
+      scr.position.z = 0.038; phone.add(scr);
       const scanLine = new T3.Mesh(new T3.PlaneGeometry(0.6, 0.018), new T3.MeshBasicMaterial({ color: 0xff2d2d, transparent: true, opacity: 0.9 }));
-      scanLine.position.z = 0.04; scanLine.visible = false; phone.add(scanLine);
+      scanLine.position.z = 0.043; scanLine.visible = false; phone.add(scanLine);
       scene.add(phone);
 
       // handheld scanner (staff side)
@@ -1903,13 +1906,13 @@ svg.plan { width: 100%; height: auto; display: block; }
       const topEdge = mesh(new T3.BoxGeometry(BW + 0.004, 0.02, BD + 0.004), kraftDark);
       topEdge.position.set(0, BH - 0.01, 0); bag.add(topEdge);
       // receipt stapled through the flap, hanging flat down the front
-      const RW = 0.19, RH = 0.34, RZ = FRONT + flapT + 0.004;
+      const RW = 0.19, RH = 0.34, RZ = FRONT + flapT + 0.008;
       const label = new T3.Mesh(new T3.PlaneGeometry(RW, RH), new T3.MeshStandardMaterial({ roughness: 0.85, map: canvasTex(300, 570, drawReceipt) }));
       label.position.set(0.04, BH - 0.035 - RH / 2, RZ); label.castShadow = true; bag.add(label);
       const steel = std(0xc9ced6, 0.25, 0.9);
       [-0.05, 0.05].forEach(dx => {
         const st = mesh(new T3.BoxGeometry(0.045, 0.006, 0.004), steel, false, false);
-        st.position.set(0.04 + dx, BH - 0.06, RZ + 0.003); bag.add(st);
+        st.position.set(0.04 + dx, BH - 0.06, RZ + 0.004); bag.add(st);
       });
       bag.scale.setScalar(1.12);
       scene.add(bag);
