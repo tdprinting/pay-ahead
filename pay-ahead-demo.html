@@ -790,8 +790,8 @@ svg.plan { width: 100%; height: auto; display: block; }
     ["Grace", "Whitfield", "12141947"], ["Carlos", "Mendoza", "06261979"]
   ];
   // Base timing in ms for a 30-second autoplay. The slider scales all of it.
-  const T = { notif: 700, move: 420, tapHold: 150, afterTap: 200, typeChar: 40, pause: 600, processing: 800, banner: 900, typingDots: 700,
-              passHold: 800, walk: 1900, mapHold: 400, scanHold: 400 };
+  const T = { notif: 700, move: 420, tapHold: 150, afterTap: 200, typeChar: 40, pause: 550, processing: 800, banner: 900, typingDots: 700,
+              passHold: 800, walk: 1900, mapHold: 250, scanHold: 250 };
   const BASE_SECONDS = 30;
   const PHASE_OF_STEP = [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 3];
   const IDLE_RESET_MS = 180000; // on the last step, return to the start after 3 minutes untouched
@@ -1072,7 +1072,7 @@ svg.plan { width: 100%; height: auto; display: block; }
     const chip = `<div class="dest-chip" style="color:var(${d.color})"><i></i><span>${d.name}<small>Order RX-48213 · ${esc(state.patient.first)} ${esc(state.patient.last)}</small></span></div>`;
     if (s.screen === "map") {
       title = "Go to the green line";
-      what = "Right, green line: already paid on your phone. Left, yellow line: pay at the counter. Watch how much faster green moves.";
+      what = "Green line on the right: already paid on your phone. Yellow line on the left: pay at the counter. See how much faster green moves.";
       next = d.c ? "Go to the green line. A pharmacist will talk with you there." : "Go to the green Pay Ahead line. Have your code ready.";
       extra = chip;
     }
@@ -1309,7 +1309,7 @@ svg.plan { width: 100%; height: auto; display: block; }
     $("#mapPage").hidden = has3d;
     if (has3d) {
       startAisle();
-      later(() => { state.walkDone = true; }, ms(7000)); // safety net if animation frames are paused
+      later(() => { state.walkDone = true; }, ms(5500)); // safety net if animation frames are paused
       return;
     }
     $$(".lane").forEach(l => { const me = l.id === "lane-go"; l.classList.toggle("dest", me); l.classList.toggle("dim", !me); });
@@ -1450,39 +1450,25 @@ svg.plan { width: 100%; height: auto; display: block; }
       [-1.7, 0, 1.7].forEach(x => { const div = mesh(new T3.BoxGeometry(0.04, 0.48, 0.66), std(0xf7f8fa, 0.5)); div.position.set(x, 0.95, -1.5); scene.add(div); }); // privacy dividers
 
       // people
-      const geo = {
-        leg: new T3.CylinderGeometry(0.052, 0.046, 0.5, 12).translate(0, -0.25, 0),
-        shoe: new T3.BoxGeometry(0.1, 0.05, 0.17).translate(0, -0.5, 0.03),
-        torso: new T3.LatheGeometry([[0, 0], [0.15, 0], [0.165, 0.1], [0.155, 0.32], [0.185, 0.45], [0.15, 0.52], [0.06, 0.56], [0, 0.56]].map(([x, y]) => new T3.Vector2(x, y)), 20),
-        arm: new T3.CylinderGeometry(0.045, 0.04, 0.42, 10).translate(0, -0.21, 0),
-        hand: new T3.SphereGeometry(0.045, 10, 8).translate(0, -0.45, 0),
-        neck: new T3.CylinderGeometry(0.05, 0.055, 0.08, 10),
-        head: new T3.SphereGeometry(0.11, 20, 16), hair: new T3.SphereGeometry(0.116, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2.1),
-        ring: new T3.RingGeometry(0.26, 0.33, 40)
-      };
+      const geo = { ring: new T3.RingGeometry(0.26, 0.33, 40) };
       const SHIRTS = [0x5b7fa6, 0x7d9c8c, 0xa36d74, 0x6c6f85, 0xb59a6e, 0x4f86a0, 0x8a76a8, 0x7c8f5a, 0xb07a68, 0x6f8a96];
       const SKINS = [0xe0b090, 0xc68a62, 0x8d5a3b, 0xf1c8a5, 0xa86f4c];
-      const HAIR = [0x2b2018, 0x5a3a22, 0x111111, 0x8a6a40, 0xb8b0a5];
       const PANTS = [0x2e3440, 0x3f4856, 0x283552, 0x4b4036, 0x55606e];
       let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
       const pick = arr => arr[Math.floor(rnd() * arr.length)];
+      // Simple flat figures: legs, a rounded body, a head. Materials are cached so nothing leaks.
+      const matCache = {};
+      const flat = (color, rough) => matCache[color] || (matCache[color] = std(color, rough));
+      const bodyGeo = new T3.LatheGeometry([[0, 0], [0.16, 0], [0.18, 0.12], [0.18, 0.4], [0.14, 0.52], [0, 0.56]].map(([x, y]) => new T3.Vector2(x, y)), 18);
+      const legGeo = new T3.CylinderGeometry(0.12, 0.11, 0.48, 14);
+      const headGeo = new T3.SphereGeometry(0.115, 18, 14);
       function makePerson(shirt) {
         const g = new T3.Group();
-        const pants = std(pick(PANTS), 0.9), skin = std(pick(SKINS), 0.65), top = std(shirt, 0.88), shoes = std(0x22262d, 0.6);
-        const limbs = { legs: [], arms: [] };
-        [-1, 1].forEach(side => {
-          const leg = new T3.Group(); leg.position.set(side * 0.07, 0.5, 0);
-          leg.add(mesh(geo.leg, pants)); leg.add(mesh(geo.shoe, shoes)); g.add(leg); limbs.legs.push(leg);
-          const arm = new T3.Group(); arm.position.set(side * 0.2, 0.94, 0); arm.rotation.z = side * 0.08;
-          arm.add(mesh(geo.arm, top)); arm.add(mesh(geo.hand, skin)); g.add(arm); limbs.arms.push(arm);
-        });
-        const torso = mesh(geo.torso, top); torso.position.y = 0.46; g.add(torso);
-        const neck = mesh(geo.neck, skin); neck.position.y = 1.05; g.add(neck);
-        const head = mesh(geo.head, skin); head.position.y = 1.17; head.scale.y = 1.08; g.add(head);
-        const hair = mesh(geo.hair, std(pick(HAIR), 0.9)); hair.position.y = 1.19; g.add(hair);
+        const legs = mesh(legGeo, flat(pick(PANTS), 0.9)); legs.position.y = 0.24; g.add(legs);
+        const body = mesh(bodyGeo, flat(shirt, 0.85)); body.position.y = 0.46; g.add(body);
+        const head = mesh(headGeo, flat(pick(SKINS), 0.7)); head.position.y = 1.14; g.add(head);
         const blob = new T3.Mesh(blobGeo, blobMat); blob.rotation.x = -Math.PI / 2; blob.position.y = 0.005; g.add(blob);
-        g.userData.limbs = limbs;
-        g.scale.setScalar(0.93 + rnd() * 0.12);
+        g.scale.setScalar(0.95 + rnd() * 0.1);
         scene.add(g);
         return g;
       }
@@ -1584,6 +1570,11 @@ svg.plan { width: 100%; height: auto; display: block; }
     return p;
   }
 
+  function turnToward(obj, target, rate) {
+    let d = (target - obj.rotation.y) % (Math.PI * 2);
+    if (d > Math.PI) d -= Math.PI * 2; else if (d < -Math.PI) d += Math.PI * 2;
+    obj.rotation.y += d * Math.min(1, rate);
+  }
   function stepAisle(dt) {
     A.simT += dt;
     if (!A.youSpawned && A.simT > 0.25) { A.youSpawned = true; spawnPerson(A.lanes.go, true); }
@@ -1624,20 +1615,14 @@ svg.plan { width: 100%; height: auto; display: block; }
         [tx, tz] = p.path[0];
       }
       const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz), stepLen = WALK * dt;
-      const moving = d > 0.01;
+      const moving = d > 0.02;
       if (d > stepLen) { p.x += dx / d * stepLen; p.z += dz / d * stepLen; }
       else { p.x = tx; p.z = tz; if (p.state === "leave") p.path.shift(); }
       if (moving) {
         p.phase += dt * 9;
-        const face = Math.atan2(dx, dz);
-        p.g.rotation.y += (face - p.g.rotation.y) * Math.min(1, dt * 8);
-      } else p.g.rotation.y += (Math.PI - p.g.rotation.y) * Math.min(1, dt * 4);
-      p.g.position.set(p.x, moving ? Math.abs(Math.sin(p.phase)) * 0.025 : 0, p.z);
-      const swing = moving ? Math.sin(p.phase) * 0.5 : 0, L = p.g.userData.limbs;
-      if (L) {
-        L.legs[0].rotation.x += (swing - L.legs[0].rotation.x) * 0.4; L.legs[1].rotation.x += (-swing - L.legs[1].rotation.x) * 0.4;
-        L.arms[0].rotation.x += (-swing * 0.8 - L.arms[0].rotation.x) * 0.4; L.arms[1].rotation.x += (swing * 0.8 - L.arms[1].rotation.x) * 0.4;
-      }
+        turnToward(p.g, Math.atan2(dx, dz), dt * 8);
+      } else turnToward(p.g, Math.PI, dt * 4);
+      p.g.position.set(p.x, moving ? Math.abs(Math.sin(p.phase)) * 0.02 : 0, p.z);
       if (p.isYou) {
         A.youLabel.position.set(p.x, 1.62, p.z);
         A.youRing.position.set(p.x, 0.008, p.z);
@@ -1815,7 +1800,7 @@ svg.plan { width: 100%; height: auto; display: block; }
       // Closed kraft pharmacy bag: gusseted sides, top rolled over twice, receipt stapled through the fold.
       const kraftTex = (() => {
         const t = canvasTex(256, 256, (g, w, h) => {
-          g.fillStyle = "#a9794b"; g.fillRect(0, 0, w, h);
+          g.fillStyle = "#c79d66"; g.fillRect(0, 0, w, h);
           for (let k = 0; k < 2600; k++) { // paper speckle
             const v = Math.random();
             g.fillStyle = v < .5 ? "rgba(70, 42, 18, .10)" : "rgba(255, 236, 205, .10)";
@@ -1868,60 +1853,38 @@ svg.plan { width: 100%; height: auto; display: block; }
         g.fillText("Thank you. No signature needed.", w / 2, by + 96);
       };
 
+      // Plain kraft pharmacy bag (no logo), top folded closed, receipt stapled flat on the front.
+      // Every front layer sits a few millimetres in front of the one behind it, so nothing intersects.
       const bag = new T3.Group();
-      const BW = 0.5, BH = 0.6, BD = 0.26;
-      // body with printed front
-      const body3 = mesh(new T3.BoxGeometry(BW, BH, BD), [kraftDark, kraftDark, kraft, kraft, kraft, kraft]);
-      body3.position.y = BH / 2; bag.add(body3);
-      const front = new T3.Mesh(new T3.PlaneGeometry(BW, BH), new T3.MeshStandardMaterial({ roughness: 0.95, map: canvasTex(500, 600, (g, w, h) => {
+      const BW = 0.46, BH = 0.66, BD = 0.26, FRONT = BD / 2;
+      const kraftFace = canvasTex(460, 660, (g, w, h) => {
         g.drawImage(kraftTex.image, 0, 0, w, h);
-        g.fillStyle = "rgba(160, 36, 31, .85)"; g.textAlign = "center";
-        g.beginPath(); g.arc(w / 2, h - 150, 46, 0, Math.PI * 2); g.fill();
-        g.fillStyle = "#e9d3b4"; g.font = '800 54px "Barlow Condensed", sans-serif'; g.textBaseline = "middle"; g.fillText("Rx", w / 2, h - 148);
-        g.fillStyle = "rgba(160, 36, 31, .85)"; g.font = '800 46px "Barlow Condensed", sans-serif'; g.fillText("STOCKYARD PHARMACY", w / 2, h - 66);
-      }) }));
-      front.position.set(0, BH / 2, BD / 2 + 0.001); front.receiveShadow = true; bag.add(front);
-      // side gusset creases (the inward fold on each side)
+        g.fillStyle = "rgba(90, 60, 25, .10)"; g.fillRect(0, h - 70, w, 70);           // bottom fold
+        g.fillStyle = "rgba(90, 60, 25, .16)"; g.fillRect(0, h - 72, w, 3);
+        g.fillStyle = "rgba(90, 60, 25, .08)"; g.fillRect(0, 0, 14, h); g.fillRect(w - 14, 0, 14, h); // side creases
+      });
+      const faceMat = new T3.MeshStandardMaterial({ map: kraftFace, roughness: 0.95 });
+      const bagBody = mesh(new T3.BoxGeometry(BW, BH, BD), [kraftDark, kraftDark, kraft, kraft, faceMat, faceMat]);
+      bagBody.position.y = BH / 2; bag.add(bagBody);
+      // side gussets: the inward fold on each side
       [-1, 1].forEach(sx => {
-        const crease = new T3.Mesh(new T3.PlaneGeometry(0.03, BH - 0.06), new T3.MeshBasicMaterial({ color: 0x6e4a26, transparent: true, opacity: .35 }));
-        crease.position.set(sx * (BW / 2 + 0.001), BH / 2 + 0.02, 0); crease.rotation.y = sx * Math.PI / 2; bag.add(crease);
+        const crease = new T3.Mesh(new T3.PlaneGeometry(0.02, BH - 0.1), new T3.MeshBasicMaterial({ color: 0x7a5528, transparent: true, opacity: 0.3 }));
+        crease.position.set(sx * (BW / 2 + 0.002), BH / 2 + 0.03, 0); crease.rotation.y = sx * Math.PI / 2; bag.add(crease);
       });
-      // bottom seam
-      const seam = mesh(new T3.BoxGeometry(BW + 0.004, 0.02, BD + 0.004), kraftDark);
-      seam.position.y = 0.01; bag.add(seam);
-      // shoulders slope in from the full depth to the flattened top
-      const SH = 0.105, ang = 1.128;
-      [-1, 1].forEach(sz => {
-        const sh = mesh(new T3.BoxGeometry(BW, SH, 0.01), kraft);
-        sh.position.set(0, BH + 0.0225, sz * 0.0825); sh.rotation.x = sz * -ang; bag.add(sh);
-      });
-      // flattened top, rolled over twice toward the front
-      const neck = mesh(new T3.BoxGeometry(BW, 0.08, 0.06), kraft);
-      neck.position.set(0, BH + 0.08, 0); bag.add(neck);
-      const roll1 = mesh(new T3.BoxGeometry(BW + 0.006, 0.085, 0.03), kraftDark);
-      roll1.position.set(0, BH + 0.09, 0.045); roll1.rotation.x = 0.08; bag.add(roll1);
-      const roll2 = mesh(new T3.BoxGeometry(BW + 0.01, 0.07, 0.026), kraft);
-      roll2.position.set(0, BH + 0.085, 0.07); roll2.rotation.x = 0.12; bag.add(roll2);
-
-      // folded drug-information sheet tucked behind the receipt
-      const info = new T3.Mesh(new T3.PlaneGeometry(0.22, 0.27), new T3.MeshStandardMaterial({ roughness: 0.9, map: canvasTex(220, 270, (g, w, h) => {
-        g.fillStyle = "#f4f1ea"; g.fillRect(0, 0, w, h);
-        g.fillStyle = "#c4302b"; g.fillRect(0, 0, w, 26);
-        g.fillStyle = "#9aa1ab"; for (let y = 44; y < h - 10; y += 14) g.fillRect(14, y, w - 28 - (y % 3) * 18, 5);
-        g.fillStyle = "rgba(0, 0, 0, .08)"; g.fillRect(0, h / 2 - 1, w, 2);
-      }) }));
-      info.position.set(-0.075, BH - 0.07, 0.122); info.rotation.set(-0.12, 0, 0.07); info.castShadow = true; bag.add(info);
-
-      // the receipt, stapled through the rolled top and hanging down the front
-      const RW = 0.2, RH = 0.38;
-      const label = new T3.Mesh(new T3.PlaneGeometry(RW, RH), new T3.MeshStandardMaterial({ roughness: 0.85, side: T3.DoubleSide, map: canvasTex(300, 570, drawReceipt) }));
-      label.geometry.translate(0, -RH / 2, 0); // hinge at the top edge
-      label.position.set(0.07, BH + 0.115, 0.088); label.rotation.set(-0.13, 0, -0.03);
-      label.castShadow = true; bag.add(label);
+      // folded-over top: one flap laid down over the front
+      const flapH = 0.11, flapT = 0.012;
+      const flap = mesh(new T3.BoxGeometry(BW + 0.004, flapH, flapT), kraft);
+      flap.position.set(0, BH - flapH / 2, FRONT + flapT / 2 + 0.001); bag.add(flap);
+      const topEdge = mesh(new T3.BoxGeometry(BW + 0.004, 0.02, BD + 0.004), kraftDark);
+      topEdge.position.set(0, BH - 0.01, 0); bag.add(topEdge);
+      // receipt stapled through the flap, hanging flat down the front
+      const RW = 0.19, RH = 0.34, RZ = FRONT + flapT + 0.004;
+      const label = new T3.Mesh(new T3.PlaneGeometry(RW, RH), new T3.MeshStandardMaterial({ roughness: 0.85, map: canvasTex(300, 570, drawReceipt) }));
+      label.position.set(0.04, BH - 0.035 - RH / 2, RZ); label.castShadow = true; bag.add(label);
       const steel = std(0xc9ced6, 0.25, 0.9);
-      [-0.045, 0.045].forEach(dx => {
-        const st = mesh(new T3.BoxGeometry(0.05, 0.007, 0.006), steel, false, false);
-        st.position.set(0.07 + dx, BH + 0.1, 0.094); bag.add(st);
+      [-0.05, 0.05].forEach(dx => {
+        const st = mesh(new T3.BoxGeometry(0.045, 0.006, 0.004), steel, false, false);
+        st.position.set(0.04 + dx, BH - 0.06, RZ + 0.003); bag.add(st);
       });
       bag.scale.setScalar(1.12);
       scene.add(bag);
@@ -2053,8 +2016,9 @@ svg.plan { width: 100%; height: auto; display: block; }
     // the bag is lifted from behind the counter, set down, then slid to the patient
     const up = span(t, SCAN.bag[0], SCAN.bag[1]), slide = span(t, SCAN.bag[1], SCAN.bag[2]);
     S.bag.visible = t >= SCAN.bag[0] - 0.05;
-    S.bag.position.set(lerp(-0.9, -0.3, slide), lerp(S.TOP - 0.85, S.TOP, up) + (up < 1 ? Math.sin(up * Math.PI) * 0.12 : 0), lerp(-0.62, 0.3, slide));
-    S.bag.rotation.y = lerp(0.35, -0.15, slide);
+    const lift = S.TOP + 0.02 + (1 - up) * 0.35 + Math.sin(up * Math.PI) * 0.06; // always above the counter top
+    S.bag.position.set(lerp(-0.85, -0.3, slide), up < 1 ? lift : S.TOP + 0.002, up < 1 ? lerp(-1.0, -0.3, up) : lerp(-0.3, 0.3, slide));
+    S.bag.rotation.y = lerp(0.25, -0.12, slide);
 
     S.renderer.render(S.scene, S.camera);
   }

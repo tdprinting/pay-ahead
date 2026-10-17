@@ -16,7 +16,7 @@ with a one-file copy you can AirDrop.
 1. A "ready for pickup" text arrives. The patient taps the link.
 2. They confirm their name and date of birth, pick prescriptions, and pay with a card.
 3. A second text brings a pickup QR code.
-4. At the store they go to the green Pay Ahead line (or the Counseling Window).
+4. At the store they go to the green Pay Ahead line and register, past the long yellow regular line.
 5. A 3D scene shows the code being scanned and the bag handed over at the counter.
 6. A short summary of the benefits closes it out.
 
