@@ -1823,82 +1823,86 @@ svg.plan { width: 100%; height: auto; display: block; }
       const kraftDark = new T3.MeshStandardMaterial({ map: kraftTex, color: 0xd9c4ae, roughness: 0.96 });
 
 
-      // Closed kraft pharmacy bag, the way they are closed at the counter: the front stays flat, the back
-      // slopes in to meet it, and the closed top is folded down onto the front as a neat band. The receipt
-      // is stapled through that band and bends gently in against the front as it hangs.
+      // Classic kraft lunch-style pharmacy bag (matches the reference photo): tall, full depth almost to
+      // the top, the top flattened and folded over once so it lies flat on the front, zigzag cut edge,
+      // one staple in the middle.
       const bag = new T3.Group();
-      const BW = 0.46, BD = 0.25, H = 0.64, HB = 0.5, TT = 0.02, BEV = 0.006; // width, depth, height, back shoulder, top thickness
+      const BW = 0.42, BD = 0.24, H = 0.7, HB = 0.63, TT = 0.016, BEV = 0.005;
       const FZ = BD / 2 + BEV; // front surface
-      const prof = new T3.Shape(); // side profile: z (front +) by y
+      const prof = new T3.Shape(); // side profile, +x = front: front straight up, back pinches in near the top
       prof.moveTo(-BD / 2, 0); prof.lineTo(BD / 2, 0); prof.lineTo(BD / 2, H); prof.lineTo(BD / 2 - TT, H); prof.lineTo(-BD / 2, HB); prof.lineTo(-BD / 2, 0);
       const bagGeo = new T3.ExtrudeGeometry(prof, { depth: BW - BEV * 2, bevelEnabled: true, bevelThickness: BEV, bevelSize: BEV, bevelSegments: 3, curveSegments: 1 });
       bagGeo.rotateY(Math.PI / 2); bagGeo.translate(-(BW - BEV * 2) / 2, 0, 0);
-      bagGeo.scale(1, 1, -1); bagGeo.computeVertexNormals(); // profile is drawn with +z at the back; flip so the flat wall faces front
-      const kraftSide = new T3.MeshStandardMaterial({ map: kraftTex, color: 0xf3e6d6, roughness: 0.96, side: T3.DoubleSide });
-      const kraftBody = new T3.MeshStandardMaterial({ map: kraftTex, roughness: 0.96, side: T3.DoubleSide });
+      bagGeo.scale(1, 1, -1); bagGeo.computeVertexNormals();
+      const fineKraft = kraftTex.clone(); fineKraft.repeat.set(3.5, 3.5); fineKraft.needsUpdate = true; // fine, even paper grain
+      const kraftSide = new T3.MeshStandardMaterial({ map: fineKraft, color: 0xf0e2d0, roughness: 0.96, side: T3.DoubleSide });
+      const kraftBody = new T3.MeshStandardMaterial({ map: fineKraft, roughness: 0.96, side: T3.DoubleSide });
       bag.add(mesh(bagGeo, [kraftSide, kraftBody]));
 
-      // creases: side gusset (center fold + diagonal tuck under the sloped back) and the bottom fold
-      const creaseMat = new T3.MeshBasicMaterial({ color: 0x6f4b22, transparent: true, opacity: 0.28 });
-      const crease = (x, y1, z1, y2, z2, wdt = 0.005) => {
+      // creases: side gusset centre fold, the diagonal tucks at the bottom of each side, bottom fold on the front
+      const creaseMat = new T3.MeshBasicMaterial({ color: 0x6f4b22, transparent: true, opacity: 0.26 });
+      const crease = (x, y1, z1, y2, z2) => {
         const len = Math.hypot(y2 - y1, z2 - z1);
-        const m = new T3.Mesh(new T3.PlaneGeometry(wdt, len), creaseMat);
+        const m = new T3.Mesh(new T3.PlaneGeometry(0.005, len), creaseMat);
         m.position.set(x, (y1 + y2) / 2, (z1 + z2) / 2); m.rotation.set(-Math.atan2(z2 - z1, y2 - y1), x > 0 ? Math.PI / 2 : -Math.PI / 2, 0, "YXZ");
         bag.add(m);
       };
       [-1, 1].forEach(sx => {
         const x = sx * (BW / 2 + 0.002);
-        crease(x, 0.05, 0, HB - 0.02, 0);
-        crease(x, HB - 0.02, 0, H - 0.03, BD / 2 - 0.02);
+        crease(x, 0.1, 0, HB - 0.01, 0);
+        crease(x, 0.1, 0, 0.012, BD / 2 - 0.01);
+        crease(x, 0.1, 0, 0.012, -BD / 2 + 0.01);
       });
-      const bottomFold = new T3.Mesh(new T3.PlaneGeometry(BW - 0.03, 0.004), creaseMat);
-      bottomFold.position.set(0, 0.07, FZ + 0.001); bag.add(bottomFold);
 
-      // paper wrinkles: faint creases (a dark edge beside a light edge, the way kraft catches light),
-      // corner gusset folds near the bottom, and a soft shadow under the folded band
+      // paper wrinkles on the front and back (dark edge beside a light edge, the way kraft catches light)
       let ws = 11; const wr = () => (ws = (ws * 16807) % 2147483647) / 2147483647;
       const wrinkleTex = (w, h, shade) => canvasTex(w, h, g => {
         g.clearRect(0, 0, w, h);
-        const creaseLine = (x1, y1, x2, y2, a) => {
+        const line = (x1, y1, x2, y2, a) => {
           const nx = -(y2 - y1), ny = x2 - x1, nl = Math.hypot(nx, ny) || 1;
           g.lineCap = "round";
-          g.strokeStyle = `rgba(70, 44, 18, ${a})`; g.lineWidth = 2.2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
-          g.strokeStyle = `rgba(255, 240, 214, ${a * 0.9})`; g.lineWidth = 1.6; g.beginPath();
-          g.moveTo(x1 + nx / nl * 2.4, y1 + ny / nl * 2.4); g.lineTo(x2 + nx / nl * 2.4, y2 + ny / nl * 2.4); g.stroke();
+          g.strokeStyle = `rgba(70, 44, 18, ${a})`; g.lineWidth = 2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+          g.strokeStyle = `rgba(255, 240, 214, ${a * 0.9})`; g.lineWidth = 1.5; g.beginPath();
+          g.moveTo(x1 + nx / nl * 2.2, y1 + ny / nl * 2.2); g.lineTo(x2 + nx / nl * 2.2, y2 + ny / nl * 2.2); g.stroke();
         };
-        for (let k = 0; k < 14; k++) { // random handling creases, mostly gentle diagonals
-          const x = wr() * w, y = wr() * h, len = 40 + wr() * 140, ang = (wr() - 0.5) * 1.6 + (wr() < 0.5 ? 0 : Math.PI / 2);
-          const mx = x + Math.cos(ang) * len * 0.5 + (wr() - 0.5) * 18, my = y + Math.sin(ang) * len * 0.5 + (wr() - 0.5) * 18;
-          creaseLine(x, y, mx, my, 0.1 + wr() * 0.1);
-          creaseLine(mx, my, x + Math.cos(ang) * len, y + Math.sin(ang) * len, 0.08 + wr() * 0.08);
+        for (let k = 0; k < 10; k++) {
+          const x = wr() * w, y = wr() * h, len = 40 + wr() * 120, ang = (wr() - 0.5) * 1.4 + (wr() < 0.6 ? Math.PI / 2 : 0);
+          const mx = x + Math.cos(ang) * len * 0.5 + (wr() - 0.5) * 14, my = y + Math.sin(ang) * len * 0.5 + (wr() - 0.5) * 14;
+          line(x, y, mx, my, 0.08 + wr() * 0.08); line(mx, my, x + Math.cos(ang) * len, y + Math.sin(ang) * len, 0.06 + wr() * 0.07);
         }
-        creaseLine(18, h - 6, 60, h - 70, 0.16); creaseLine(w - 18, h - 6, w - 60, h - 70, 0.16); // gusset folds at the bottom corners
-        creaseLine(6, h * 0.12, 8, h - 20, 0.12); creaseLine(w - 6, h * 0.12, w - 8, h - 20, 0.12); // edge folds
-        if (shade) { const gr = g.createLinearGradient(0, 0, 0, 46); gr.addColorStop(0, "rgba(60, 38, 14, .28)"); gr.addColorStop(1, "rgba(60, 38, 14, 0)"); g.fillStyle = gr; g.fillRect(0, 0, w, 46); }
+        line(w * 0.5, h - 4, w * 0.5, h - 60, 0.1); // bottom seam
+        g.fillStyle = "rgba(90, 60, 25, .12)"; g.fillRect(0, h - 3, w, 3);
+        if (shade) { const gr = g.createLinearGradient(0, 0, 0, 40); gr.addColorStop(0, "rgba(60, 38, 14, .3)"); gr.addColorStop(1, "rgba(60, 38, 14, 0)"); g.fillStyle = gr; g.fillRect(0, 0, w, 40); }
       });
-      const frontH = H - 0.1 - 0.004;
-      const frontWr = new T3.Mesh(new T3.PlaneGeometry(BW - 0.008, frontH), new T3.MeshBasicMaterial({ map: wrinkleTex(460, 540, true), transparent: true, depthWrite: false }));
+      const FLAP_H = 0.12;
+      const frontH = H - FLAP_H + 0.01;
+      const frontWr = new T3.Mesh(new T3.PlaneGeometry(BW - 0.008, frontH), new T3.MeshBasicMaterial({ map: wrinkleTex(420, 560, true), transparent: true, depthWrite: false }));
       frontWr.position.set(0, frontH / 2, FZ + 0.0015); frontWr.renderOrder = 1; bag.add(frontWr);
-      const backWr = new T3.Mesh(new T3.PlaneGeometry(BW - 0.008, HB - 0.01), new T3.MeshBasicMaterial({ map: wrinkleTex(460, 500, false), transparent: true, depthWrite: false }));
+      const backWr = new T3.Mesh(new T3.PlaneGeometry(BW - 0.008, HB - 0.01), new T3.MeshBasicMaterial({ map: wrinkleTex(420, 540, false), transparent: true, depthWrite: false }));
       backWr.position.set(0, (HB - 0.01) / 2, -FZ - 0.0015); backWr.rotation.y = Math.PI; backWr.renderOrder = 1; bag.add(backWr);
 
-      // the folded-down top: a rounded fold along the top edge, then a flat band lying on the front
-      const BAND_H = 0.1, BAND_T = 0.018;
-      // the fold: a half-round edge joining the top of the bag to the band, flush with both
-      const roll = mesh(new T3.CylinderGeometry((BAND_T + TT) / 2, (BAND_T + TT) / 2, BW + 0.004, 24, 1, false, 0, Math.PI), kraftDark);
-      roll.rotation.set(0, 0, Math.PI / 2); roll.rotation.order = "ZYX";
-      roll.position.set(0, H, FZ + BAND_T / 2 + 0.001 - (BAND_T + TT) / 2 + BAND_T / 2); bag.add(roll);
-      const band = mesh(new T3.BoxGeometry(BW + 0.004, BAND_H, BAND_T), kraftDark);
-      band.position.set(0, H - BAND_H / 2, FZ + BAND_T / 2 + 0.001); bag.add(band);
-      [0.03, 0.065].forEach(dy => { const fl = new T3.Mesh(new T3.PlaneGeometry(BW - 0.02, 0.003), creaseMat); fl.position.set(0, H - dy, FZ + BAND_T + 0.0025); bag.add(fl); });
-      const bandEdge = new T3.Mesh(new T3.PlaneGeometry(BW + 0.004, 0.004), creaseMat);
-      bandEdge.position.set(0, H - BAND_H + 0.004, FZ + BAND_T + 0.0025); bag.add(bandEdge);
-
-      const steel = std(0xc9ced6, 0.25, 0.9);
-      [-0.09, 0.09].forEach(dx => { // two staples holding the folded top closed (the receipt is digital)
-        const st = mesh(new T3.BoxGeometry(0.04, 0.006, 0.004), steel, false, false);
-        st.position.set(dx, H - 0.045, FZ + BAND_T + 0.004); bag.add(st);
+      // the folded-over top: a rounded fold along the top edge, then a flap lying flat on the front with a zigzag edge
+      const fold = mesh(new T3.CylinderGeometry(0.009, 0.009, BW + 0.002, 20, 1, false, 0, Math.PI), kraftBody);
+      fold.rotation.set(0, 0, Math.PI / 2); fold.rotation.order = "ZYX";
+      fold.position.set(0, H, FZ - TT / 2 + 0.002); bag.add(fold);
+      const flapTex = canvasTex(420, 130, (g, w, h) => {
+        g.clearRect(0, 0, w, h);
+        for (let tx = 0; tx < w; tx += 72) g.drawImage(kraftTex.image, tx, 0, 72, 72), g.drawImage(kraftTex.image, tx, 72, 72, 72);
+        const gr = g.createLinearGradient(0, 0, 0, 22); gr.addColorStop(0, "rgba(70, 44, 18, .25)"); gr.addColorStop(1, "rgba(70, 44, 18, 0)"); g.fillStyle = gr; g.fillRect(0, 0, w, 22);
+        // zigzag cut edge along the bottom
+        g.globalCompositeOperation = "destination-out";
+        g.beginPath(); g.moveTo(0, h); const teeth = 46, tw = w / teeth;
+        for (let k = 0; k <= teeth; k++) g.lineTo(k * tw, h - (k % 2 ? 15 : 1));
+        g.lineTo(w, h); g.closePath(); g.fill();
+        g.globalCompositeOperation = "source-over";
       });
+      const flap = new T3.Mesh(new T3.PlaneGeometry(BW + 0.002, FLAP_H), new T3.MeshStandardMaterial({ map: flapTex, roughness: 0.96, transparent: true, alphaTest: 0.5, side: T3.DoubleSide }));
+      flap.position.set(0, H - FLAP_H / 2, FZ + 0.005); flap.castShadow = true; bag.add(flap);
+      const flapShadow = new T3.Mesh(new T3.PlaneGeometry(BW, 0.014), new T3.MeshBasicMaterial({ color: 0x4a2f12, transparent: true, opacity: 0.18, depthWrite: false }));
+      flapShadow.position.set(0, H - FLAP_H - 0.004, FZ + 0.002); flapShadow.renderOrder = 2; bag.add(flapShadow);
+      // one staple in the middle of the fold
+      const staple = mesh(new T3.BoxGeometry(0.045, 0.006, 0.004), std(0xc9ced6, 0.25, 0.9), false, false);
+      staple.position.set(0, H - 0.05, FZ + 0.008); bag.add(staple);
       bag.scale.setScalar(1.12);
       scene.add(bag);
 
