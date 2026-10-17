@@ -1848,86 +1848,97 @@ svg.plan { width: 100%; height: auto; display: block; }
       const kraftDark = new T3.MeshStandardMaterial({ map: kraftTex, color: 0xd9c4ae, roughness: 0.96 });
 
 
-      // Classic kraft lunch-style pharmacy bag (matches the reference photo): tall, full depth almost to
-      // the top, the top flattened and folded over once so it lies flat on the front, zigzag cut edge,
-      // one staple in the middle.
+      // Kraft pharmacy bag modeled from a reference photo. Every panel is a fine grid so the paper can bow
+      // and fold with smooth shading: a slightly bulging front and back, side gussets that fold inward in a
+      // V (deeper near the top where the bag is closed), the back pressing forward to meet the front at the
+      // top, and the closed top rolled over the edge to hang flat on the front with a pinked (zigzag) edge.
       const bag = new T3.Group();
-      const BW = 0.42, BD = 0.24, H = 0.7, HB = 0.63, TT = 0.016, BEV = 0.005;
-      const FZ = BD / 2 + BEV; // front surface
-      const prof = new T3.Shape(); // side profile, +x = front: front straight up, back pinches in near the top
-      prof.moveTo(-BD / 2, 0); prof.lineTo(BD / 2, 0); prof.lineTo(BD / 2, H); prof.lineTo(BD / 2 - TT, H); prof.lineTo(-BD / 2, HB); prof.lineTo(-BD / 2, 0);
-      const bagGeo = new T3.ExtrudeGeometry(prof, { depth: BW - BEV * 2, bevelEnabled: true, bevelThickness: BEV, bevelSize: BEV, bevelSegments: 3, curveSegments: 1 });
-      bagGeo.rotateY(Math.PI / 2); bagGeo.translate(-(BW - BEV * 2) / 2, 0, 0);
-      bagGeo.scale(1, 1, -1); bagGeo.computeVertexNormals();
-      const fineKraft = kraftTex.clone(); fineKraft.repeat.set(3.5, 3.5); fineKraft.needsUpdate = true; // fine, even paper grain
-      const kraftSide = new T3.MeshStandardMaterial({ map: fineKraft, color: 0xf0e2d0, roughness: 0.96, side: T3.DoubleSide });
-      const kraftBody = new T3.MeshStandardMaterial({ map: fineKraft, roughness: 0.96, side: T3.DoubleSide });
-      bag.add(mesh(bagGeo, [kraftSide, kraftBody]));
-
-      // creases: side gusset centre fold, the diagonal tucks at the bottom of each side, bottom fold on the front
-      const creaseMat = new T3.MeshBasicMaterial({ color: 0x6f4b22, transparent: true, opacity: 0.26 });
-      const crease = (x, y1, z1, y2, z2) => {
-        const len = Math.hypot(y2 - y1, z2 - z1);
-        const m = new T3.Mesh(new T3.PlaneGeometry(0.005, len), creaseMat);
-        m.position.set(x, (y1 + y2) / 2, (z1 + z2) / 2); m.rotation.set(-Math.atan2(z2 - z1, y2 - y1), x > 0 ? Math.PI / 2 : -Math.PI / 2, 0, "YXZ");
-        bag.add(m);
-      };
-      [-1, 1].forEach(sx => {
-        const x = sx * (BW / 2 + 0.002);
-        crease(x, 0.1, 0, HB - 0.01, 0);
-        crease(x, 0.1, 0, 0.012, BD / 2 - 0.01);
-        crease(x, 0.1, 0, 0.012, -BD / 2 + 0.01);
-      });
-
-      // paper wrinkles on the front and back (dark edge beside a light edge, the way kraft catches light)
-      let ws = 11; const wr = () => (ws = (ws * 16807) % 2147483647) / 2147483647;
-      const wrinkleTex = (w, h, shade) => canvasTex(w, h, g => {
-        g.clearRect(0, 0, w, h);
-        const line = (x1, y1, x2, y2, a) => {
-          const nx = -(y2 - y1), ny = x2 - x1, nl = Math.hypot(nx, ny) || 1;
-          g.lineCap = "round";
-          g.strokeStyle = `rgba(70, 44, 18, ${a})`; g.lineWidth = 2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
-          g.strokeStyle = `rgba(255, 240, 214, ${a * 0.9})`; g.lineWidth = 1.5; g.beginPath();
-          g.moveTo(x1 + nx / nl * 2.2, y1 + ny / nl * 2.2); g.lineTo(x2 + nx / nl * 2.2, y2 + ny / nl * 2.2); g.stroke();
-        };
-        for (let k = 0; k < 10; k++) {
-          const x = wr() * w, y = wr() * h, len = 40 + wr() * 120, ang = (wr() - 0.5) * 1.4 + (wr() < 0.6 ? Math.PI / 2 : 0);
-          const mx = x + Math.cos(ang) * len * 0.5 + (wr() - 0.5) * 14, my = y + Math.sin(ang) * len * 0.5 + (wr() - 0.5) * 14;
-          line(x, y, mx, my, 0.08 + wr() * 0.08); line(mx, my, x + Math.cos(ang) * len, y + Math.sin(ang) * len, 0.06 + wr() * 0.07);
+      const W = 0.37, D = 0.22, H = 0.72, HS = 0.63, T = 0.012, FL = 0.1, BULGE = 0.008; // proportions from the unfolded bag photo
+      const paperTex = canvasTex(512, 512, (g, w, h) => {
+        g.fillStyle = "#c49b69"; g.fillRect(0, 0, w, h);
+        for (let k = 0; k < 9000; k++) {
+          g.fillStyle = Math.random() < 0.5 ? "rgba(90, 60, 28, .06)" : "rgba(255, 240, 215, .06)";
+          g.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 2, 1);
         }
-        line(w * 0.5, h - 4, w * 0.5, h - 60, 0.1); // bottom seam
-        g.fillStyle = "rgba(90, 60, 25, .12)"; g.fillRect(0, h - 3, w, 3);
-        if (shade) { const gr = g.createLinearGradient(0, 0, 0, 40); gr.addColorStop(0, "rgba(60, 38, 14, .3)"); gr.addColorStop(1, "rgba(60, 38, 14, 0)"); g.fillStyle = gr; g.fillRect(0, 0, w, 40); }
+        for (let k = 0; k < 220; k++) { // short paper fibres
+          g.strokeStyle = `rgba(${Math.random() < 0.5 ? "95, 64, 30" : "250, 228, 195"}, .07)`; g.lineWidth = 1;
+          const x = Math.random() * w, y = Math.random() * h;
+          g.beginPath(); g.moveTo(x, y); g.lineTo(x + (Math.random() - 0.5) * 3, y + 6 + Math.random() * 22); g.stroke();
+        }
+        for (let k = 0; k < 7; k++) { // faint vertical streaks
+          const x = Math.random() * w, gr = g.createLinearGradient(x - 6, 0, x + 6, 0);
+          gr.addColorStop(0, "rgba(0, 0, 0, 0)"); gr.addColorStop(0.5, Math.random() < 0.5 ? "rgba(90, 60, 28, .06)" : "rgba(255, 240, 215, .07)"); gr.addColorStop(1, "rgba(0, 0, 0, 0)");
+          g.fillStyle = gr; g.fillRect(x - 6, 0, 12, h);
+        }
       });
-      const FLAP_H = 0.12;
-      const frontH = H - FLAP_H + 0.01;
-      const frontWr = new T3.Mesh(new T3.PlaneGeometry(BW - 0.008, frontH), new T3.MeshBasicMaterial({ map: wrinkleTex(420, 560, true), transparent: true, depthWrite: false }));
-      frontWr.position.set(0, frontH / 2, FZ + 0.0015); frontWr.renderOrder = 1; bag.add(frontWr);
-      const backWr = new T3.Mesh(new T3.PlaneGeometry(BW - 0.008, HB - 0.01), new T3.MeshBasicMaterial({ map: wrinkleTex(420, 540, false), transparent: true, depthWrite: false }));
-      backWr.position.set(0, (HB - 0.01) / 2, -FZ - 0.0015); backWr.rotation.y = Math.PI; backWr.renderOrder = 1; bag.add(backWr);
+      paperTex.wrapS = paperTex.wrapT = T3.RepeatWrapping;
+      const paper = new T3.MeshStandardMaterial({ map: paperTex, roughness: 0.93, side: T3.DoubleSide });
+      const UVS = 3.2; // texture repeats per metre
+      const smooth = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+      const closeT = y => smooth((y - HS) / (H - HS));             // 0 below the closing zone, 1 at the very top
+      const backZ = y => -D / 2 + (D - T) * closeT(y);            // the back presses forward to meet the front
+      const FRONT = D / 2;
+      const grid = (nu, nv, fn, uvScale = UVS) => {
+        const pos = [], uv = [], idx = [];
+        for (let jv = 0; jv <= nv; jv++) for (let iu = 0; iu <= nu; iu++) {
+          const [x, y, z, a, b] = fn(iu / nu, jv / nv);
+          pos.push(x, y, z); uv.push(a * uvScale, b * uvScale);
+          if (iu < nu && jv < nv) { const q = jv * (nu + 1) + iu, r = q + 1, c = q + nu + 1, d = c + 1; idx.push(q, r, c, r, d, c); }
+        }
+        const geo = new T3.BufferGeometry();
+        geo.setAttribute("position", new T3.Float32BufferAttribute(pos, 3));
+        geo.setAttribute("uv", new T3.Float32BufferAttribute(uv, 2));
+        geo.setIndex(idx); geo.computeVertexNormals();
+        return geo;
+      };
+      const panel = (geo, mat = paper) => { const m = new T3.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true; bag.add(m); return m; };
+      const bow = (u, v) => BULGE * Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, v * 1.12));
+      // front: gently bowed outward
+      panel(grid(18, 28, (u, v) => { const x = (u - 0.5) * W, y = v * H; return [x, y, FRONT + bow(u, v), x, y]; }));
+      // back: bowed, then pressed forward at the top
+      panel(grid(18, 28, (u, v) => { const x = (u - 0.5) * W, y = v * H; return [x, y, backZ(y) - bow(u, v) * (1 - closeT(y)), -x, y]; }));
+      // sides: the gusset folds inward in a V, tucking deeper toward the closed top
+      [-1, 1].forEach(sx => panel(grid(14, 28, (u, v) => {
+        const y = v * H, zb = backZ(y), z = zb + (FRONT - zb) * u;
+        const tuck = 0.012 + 0.055 * smooth((y - HS + 0.06) / (H - HS + 0.06));
+        const inward = tuck * (1 - Math.abs(2 * u - 1)) * (1 - closeT(y) * 0.35);
+        return [sx * (W / 2 - inward), y, z, z * sx, y];
+      })));
+      // bottom
+      panel(grid(4, 4, (u, v) => [(u - 0.5) * W, 0.001, -D / 2 + v * D, (u - 0.5) * W, v * D]));
+      // a soft fold line across the bottom of the front
+      const lineMat = new T3.MeshBasicMaterial({ color: 0x5a3a18, transparent: true, opacity: 0.16, depthWrite: false });
+      const bottomFold = new T3.Mesh(new T3.PlaneGeometry(W - 0.04, 0.004), lineMat); bottomFold.position.set(0, 0.06, FRONT + 0.004); bag.add(bottomFold);
 
-      // the folded-over top: a rounded fold along the top edge, then a flap lying flat on the front with a zigzag edge
-      const fold = mesh(new T3.CylinderGeometry(0.009, 0.009, BW + 0.002, 20, 1, false, 0, Math.PI), kraftBody);
-      fold.rotation.set(0, 0, Math.PI / 2); fold.rotation.order = "ZYX";
-      fold.position.set(0, H, FZ - TT / 2 + 0.002); bag.add(fold);
-      const flapTex = canvasTex(420, 130, (g, w, h) => {
-        g.clearRect(0, 0, w, h);
-        for (let tx = 0; tx < w; tx += 72) g.drawImage(kraftTex.image, tx, 0, 72, 72), g.drawImage(kraftTex.image, tx, 72, 72, 72);
-        const gr = g.createLinearGradient(0, 0, 0, 22); gr.addColorStop(0, "rgba(70, 44, 18, .25)"); gr.addColorStop(1, "rgba(70, 44, 18, 0)"); g.fillStyle = gr; g.fillRect(0, 0, w, 22);
-        // zigzag cut edge along the bottom
-        g.globalCompositeOperation = "destination-out";
-        g.beginPath(); g.moveTo(0, h); const teeth = 46, tw = w / teeth;
-        for (let k = 0; k <= teeth; k++) g.lineTo(k * tw, h - (k % 2 ? 15 : 1));
+      // the closed top rolls over the top edge and hangs flat on the front, with a pinked edge
+      const R = (T + 0.008) / 2, CZ = (FRONT - T - 0.002 + FRONT + 0.006) / 2, ARC = Math.PI * R, TOTAL = ARC + FL;
+      const flapTex = canvasTex(512, 200, (g, w, h) => {
+        g.drawImage(paperTex.image, 0, 0, 512, 512);
+        const gr = g.createLinearGradient(0, 0, 0, 34); gr.addColorStop(0, "rgba(80, 52, 22, .22)"); gr.addColorStop(1, "rgba(80, 52, 22, 0)");
+        g.fillStyle = gr; g.fillRect(0, 0, w, 34);
+        g.globalCompositeOperation = "destination-out"; // pinked bottom edge
+        g.beginPath(); g.moveTo(0, h); const n = 70, tw = w / n;
+        for (let k = 0; k <= n; k++) g.lineTo(k * tw, h - (k % 2 ? 13 : 2));
         g.lineTo(w, h); g.closePath(); g.fill();
         g.globalCompositeOperation = "source-over";
       });
-      const flap = new T3.Mesh(new T3.PlaneGeometry(BW + 0.002, FLAP_H), new T3.MeshStandardMaterial({ map: flapTex, roughness: 0.96, transparent: true, alphaTest: 0.5, side: T3.DoubleSide }));
-      flap.position.set(0, H - FLAP_H / 2, FZ + 0.005); flap.castShadow = true; bag.add(flap);
-      const flapShadow = new T3.Mesh(new T3.PlaneGeometry(BW, 0.014), new T3.MeshBasicMaterial({ color: 0x4a2f12, transparent: true, opacity: 0.18, depthWrite: false }));
-      flapShadow.position.set(0, H - FLAP_H - 0.004, FZ + 0.002); flapShadow.renderOrder = 2; bag.add(flapShadow);
-      // one staple in the middle of the fold
+      const flapPath = (v, len, inset) => { // v: 0 = back edge of the roll, 1 = pinked bottom edge
+        const d = v * (ARC + len);
+        if (d < ARC) { const a = d / R; return [H + (R - inset) * Math.sin(a), CZ - (R - inset) * Math.cos(a)]; }
+        const k = (d - ARC) / len;
+        return [H - (d - ARC), CZ + R - inset + 0.004 * Math.sin(Math.PI * k)];
+      };
+      const flapMat = new T3.MeshStandardMaterial({ map: flapTex, roughness: 0.93, transparent: true, alphaTest: 0.5, side: T3.DoubleSide });
+      const flapGeo = grid(10, 30, (u, v) => { const [y, z] = flapPath(v, FL, 0); return [(u - 0.5) * (W + 0.008), y, z, u, 1 - v]; }, 1);
+      panel(flapGeo, flapMat);
+      // a second, slightly shorter layer just behind it shows the folded paper layers at the edges
+      const layerMat = new T3.MeshStandardMaterial({ map: flapTex, color: 0xd9c5ab, roughness: 0.95, transparent: true, alphaTest: 0.5, side: T3.DoubleSide });
+      panel(grid(10, 26, (u, v) => { const [y, z] = flapPath(v, FL - 0.012, 0.004); return [(u - 0.5) * (W + 0.004), y, z, u, 1 - v]; }, 1), layerMat);
+      // soft shadow under the pinked edge, and one staple in the middle of the fold
+      const shade = new T3.Mesh(new T3.PlaneGeometry(W, 0.016), new T3.MeshBasicMaterial({ color: 0x4a2f12, transparent: true, opacity: 0.16, depthWrite: false }));
+      shade.position.set(0, H - FL - 0.006, FRONT + BULGE * 0.5 + 0.003); shade.renderOrder = 2; bag.add(shade);
       const staple = mesh(new T3.BoxGeometry(0.045, 0.006, 0.004), std(0xc9ced6, 0.25, 0.9), false, false);
-      staple.position.set(0, H - 0.05, FZ + 0.008); bag.add(staple);
+      staple.position.set(0, H - FL * 0.45, CZ + R + 0.006); bag.add(staple);
       bag.scale.setScalar(1.12);
       scene.add(bag);
 
@@ -1955,14 +1966,25 @@ svg.plan { width: 100%; height: auto; display: block; }
       display.position.set(0.85, 1.14, 0.15); display.rotation.y = -0.55;
       scene.add(display);
 
-      // the patient's hand holding the phone (palm under the phone, thumb on the side, sleeve)
-      const skin = std(0xd9a07a, 0.8);
-      const palm = mesh(new T3.BoxGeometry(0.5, 0.62, 0.1), skin);
-      palm.position.set(0.04, -0.28, -0.08); phone.add(palm);
-      const thumb = mesh(new T3.CylinderGeometry(0.045, 0.045, 0.3, 10), skin);
-      thumb.position.set(-0.33, -0.18, 0.0); thumb.rotation.z = 0.35;
-      const sleeve = mesh(new T3.CylinderGeometry(0.17, 0.2, 0.7, 16), std(0x3a5a8c, 0.9));
-      sleeve.position.set(0.06, -0.85, -0.12); phone.add(sleeve);
+      // the patient's hand: a soft, simplified hand behind the phone, with the thumb and fingers
+      // curling around the edges (never over the screen) and a clean sleeve cuff
+      const skin = std(0xe2b08c, 0.7), sleeveMat = std(0x4b6a9b, 0.85);
+      const capsule = (r, len, mat) => {
+        const g2 = new T3.Group();
+        g2.add(mesh(new T3.CylinderGeometry(r, r, len, 16), mat));
+        [-1, 1].forEach(e => { const cap = mesh(new T3.SphereGeometry(r, 16, 10), mat); cap.position.y = e * len / 2; g2.add(cap); });
+        return g2;
+      };
+      const palmShape = new T3.Shape(); const pw = 0.44, ph = 0.5, pr = 0.16;
+      palmShape.moveTo(-pw / 2 + pr, -ph / 2); palmShape.lineTo(pw / 2 - pr, -ph / 2); palmShape.quadraticCurveTo(pw / 2, -ph / 2, pw / 2, -ph / 2 + pr);
+      palmShape.lineTo(pw / 2, ph / 2 - pr); palmShape.quadraticCurveTo(pw / 2, ph / 2, pw / 2 - pr, ph / 2); palmShape.lineTo(-pw / 2 + pr, ph / 2);
+      palmShape.quadraticCurveTo(-pw / 2, ph / 2, -pw / 2, ph / 2 - pr); palmShape.lineTo(-pw / 2, -ph / 2 + pr); palmShape.quadraticCurveTo(-pw / 2, -ph / 2, -pw / 2 + pr, -ph / 2);
+      const palmGeo = new T3.ExtrudeGeometry(palmShape, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 4, curveSegments: 10 });
+      const palm = mesh(palmGeo, skin); palm.position.set(0.02, -0.34, -0.1); phone.add(palm);
+      const fingers = capsule(0.045, 0.3, skin); fingers.position.set(0.355, -0.24, -0.02); phone.add(fingers); // fingers wrap the right edge
+      const thumb = capsule(0.042, 0.2, skin); thumb.position.set(-0.36, -0.36, -0.015); thumb.rotation.z = -0.35; phone.add(thumb); // thumb on the left edge
+      const cuff = mesh(new T3.CylinderGeometry(0.15, 0.15, 0.1, 24), std(0xf2f3f5, 0.6)); cuff.position.set(0.02, -0.66, -0.08); phone.add(cuff);
+      const sleeve = mesh(new T3.CylinderGeometry(0.16, 0.17, 0.62, 24), sleeveMat); sleeve.position.set(0.02, -1.0, -0.08); phone.add(sleeve);
 
       s3 = { T3, renderer, scene, camera, phone, scr, screenMat, drawPass, canvasTex, scanLine, gun, beam, bag, flash, TOP, dispMat, drawDisplay, running: false, t0: 0, paid: false, raf: 0 };
       return s3;
