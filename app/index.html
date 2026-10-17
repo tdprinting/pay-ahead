@@ -776,13 +776,13 @@ svg.plan { width: 100%; height: auto; display: block; }
           <input type="range" id="speed" min="15" max="60" step="5" value="30">
           <output class="speedOut" for="speed">30 sec</output>
         </div>
-        <p class="coach-foot">Practice demo only. Nothing is sent or charged. Stockyard is a made-up brand, and all names and prices are examples.<span class="kbd-line"><br>Keys: <kbd>Space</kbd> play or pause, <kbd>←</kbd> <kbd>→</kbd> step, <kbd>R</kbd> start over.</span></p>
+        <p class="coach-foot">Practice demo only. Nothing is sent or charged.<span class="app-version"> Version dev.</span> Stockyard is a made-up brand, and all names and prices are examples.<span class="kbd-line"><br>Keys: <kbd>Space</kbd> play or pause, <kbd>←</kbd> <kbd>→</kbd> step, <kbd>R</kbd> start over.</span></p>
       </div>
     </aside>
   </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="vendor/three.min.js"></script>
 <script>
 (() => {
   /* ---- Demo settings: edit these to change names, meds, prices ---- */
@@ -1686,5 +1686,11 @@ svg.plan { width: 100%; height: auto; display: block; }
 })();
 </script>
 
+<script>
+  // Offline support: the service worker keeps a copy so the app opens with no signal.
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
+</script>
 </body>
 </html>
