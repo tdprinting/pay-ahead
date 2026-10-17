@@ -17,7 +17,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
 <style>
 /* Layout: the phone is the stage and fills the screen height. A frosted-glass coach floats over it
    (bottom dock on phones and tablets, side card on desktop) saying what is happening and what to do.
@@ -48,7 +48,7 @@
   --tint2: rgba(196, 48, 43, .10);
   --inset-b: 0px;
   --k: 1;
-  --font-sign: "Barlow Condensed", "Arial Narrow", "Segoe UI", sans-serif;
+  --font-sign: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
@@ -84,7 +84,7 @@ button, input { touch-action: manipulation; }
 .coach-brand { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .logo { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .logo svg { width: 34px; height: 34px; flex: none; }
-.logo b { display: block; font-family: var(--font-sign); font-weight: 800; font-size: 21px; letter-spacing: .05em; line-height: 1; text-transform: uppercase; color: var(--red); }
+.logo b { display: block; font-family: var(--font-sign); font-weight: 900; font-style: italic; font-size: 21px; letter-spacing: .01em; line-height: 1; text-transform: uppercase; color: var(--red); }
 .logo span { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.2; margin-top: 2px; }
 .badge { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); border: 1.5px solid currentColor; border-radius: 6px; padding: 3px 7px; white-space: nowrap; }
 .coach-foot { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
@@ -174,7 +174,7 @@ button, input { touch-action: manipulation; }
 @keyframes load { 0% { transform: scaleX(0); opacity: 1; } 80% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
 .site-head { display: flex; align-items: center; gap: 8px; padding: 9px 14px; background: var(--p-red); color: #fff; flex: none; }
 .site-head svg { width: 24px; height: 24px; }
-.site-head b { font-family: var(--font-sign); font-weight: 800; font-size: 19px; letter-spacing: .05em; text-transform: uppercase; line-height: 1; }
+.site-head b { font-family: var(--font-sign); font-weight: 900; font-style: italic; font-size: 18px; letter-spacing: .01em; text-transform: uppercase; line-height: 1; }
 .site-head small { margin-left: auto; font-family: var(--font-sign); font-weight: 600; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
 .page { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 14px 16px calc(20px + var(--inset-b)); display: flex; flex-direction: column; gap: 11px; position: relative; }
 .page h2 { margin: 0; font-size: 20px; line-height: 1.2; }
@@ -237,7 +237,7 @@ button, input { touch-action: manipulation; }
 .laneflag i { width: 12px; height: 38px; border-radius: 4px; flex: none; }
 .laneflag small { display: block; font-weight: 400; font-size: 12.5px; color: #3b4a46; }
 .pass-head { text-align: center; display: grid; gap: 2px; }
-.pass-head b { font-family: var(--font-sign); font-weight: 800; font-size: 24px; letter-spacing: .06em; text-transform: uppercase; color: var(--p-red); }
+.pass-head b { font-family: var(--font-sign); font-weight: 800; font-size: 22px; letter-spacing: .02em; text-transform: uppercase; color: var(--p-red); }
 .qrbox { width: min(200px, 70%); margin: 0 auto; padding: 10px; background: #fff; border: 2px solid #111; border-radius: 14px; }
 .qrbox svg { display: block; width: 100%; height: auto; }
 
@@ -268,7 +268,7 @@ svg.plan { width: 100%; height: auto; display: block; }
 .lane.dim { opacity: .3; }
 .lane.dest .lane-bg { animation: glow 1.6s ease-in-out infinite alternate; }
 @keyframes glow { from { opacity: .16; } to { opacity: .42; } }
-.sign-t { font-family: var(--font-sign); font-weight: 800; letter-spacing: .06em; }
+.sign-t { font-family: var(--font-sign); font-weight: 800; letter-spacing: .01em; }
 .plan .sign-t { font-size: 21px; }
 .plan text:not(.sign-t) { font-size: 17px; }
 .apppage { padding-top: 54px; gap: 12px; }
@@ -1382,12 +1382,21 @@ svg.plan { width: 100%; height: auto; display: block; }
       const camera = new T3.PerspectiveCamera(50, 0.6, 0.5, 40);
       const std = (color, rough = 0.75, metal = 0) => new T3.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
       const mesh = (geo, mat, cast = true, recv = true) => { const m = new T3.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = recv; return m; };
-      const tex = (w, h, draw) => { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new T3.CanvasTexture(c); t.encoding = T3.sRGBEncoding; t.anisotropy = 4; return t; };
+      const tex = (w, h, draw) => {
+        const c = document.createElement("canvas"); c.width = w; c.height = h;
+        const ctx = c.getContext("2d"), fillText = ctx.fillText.bind(ctx);
+        ctx.fillText = (t, x, y, maxW) => {
+          const room = ctx.textAlign === "center" ? Math.min(x, w - x) * 2 : ctx.textAlign === "right" ? x : w - x;
+          fillText(t, x, y, Math.max(10, Math.min(maxW || Infinity, room - 8)));
+        };
+        draw(ctx, w, h);
+        const t = new T3.CanvasTexture(c); t.encoding = T3.sRGBEncoding; t.anisotropy = 4; return t;
+      };
       const fit = (g, text, weight, family, max, width) => {
         let size = max;
         do { g.font = `${weight} ${size}px ${family}`; size -= 2; } while (g.measureText(text).width > width && size > 10);
       };
-      const SIGN = '"Barlow Condensed", "Arial Narrow", sans-serif', BODY = '"Atkinson Hyperlegible", sans-serif';
+      const SIGN = '"Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif', BODY = '"Atkinson Hyperlegible", sans-serif';
       const signTex = (text, bg, fg, w, h, size) => tex(w, h, g => {
         g.fillStyle = bg; g.fillRect(0, 0, w, h); g.fillStyle = fg; g.textAlign = "center"; g.textBaseline = "middle";
         fit(g, text, 800, SIGN, size, w * 0.9); g.fillText(text, w / 2, h / 2 + 2);
@@ -1457,8 +1466,8 @@ svg.plan { width: 100%; height: auto; display: block; }
       const fasciaFace = new T3.Mesh(new T3.PlaneGeometry(4.9, 0.42), new T3.MeshBasicMaterial({ map: tex(1400, 120, (g, w, h) => {
         g.fillStyle = "#c4302b"; g.fillRect(0, 0, w, h);
         g.fillStyle = "#ffffff"; g.beginPath(); g.arc(470, h / 2, 42, 0, Math.PI * 2); g.fill();
-        g.fillStyle = "#c4302b"; g.font = '800 50px "Barlow Condensed", sans-serif'; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("Rx", 470, h / 2 + 2);
-        g.fillStyle = "#ffffff"; g.font = '800 86px "Barlow Condensed", "Arial Narrow", sans-serif'; g.textAlign = "left"; g.fillText("PHARMACY", 535, h / 2 + 4);
+        g.fillStyle = "#c4302b"; g.font = '800 50px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("Rx", 470, h / 2 + 2);
+        g.fillStyle = "#ffffff"; g.font = '800 86px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.textAlign = "left"; g.fillText("PHARMACY", 535, h / 2 + 4);
       }) }));
       fasciaFace.position.set(0, 2.78, -1.868); scene.add(fasciaFace);
       [-2.45, 2.45].forEach(x => { const col = mesh(new T3.BoxGeometry(0.18, 2.8, 0.18), std(0xf4f5f7, 0.7)); col.position.set(x, 1.4, -1.95); scene.add(col); });
@@ -1729,12 +1738,17 @@ svg.plan { width: 100%; height: auto; display: block; }
       const mesh = (geo, mat, cast = true, recv = true) => { const m = new T3.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = recv; return m; };
       const canvasTex = (w, h, draw) => {
         const c = document.createElement("canvas"); c.width = w; c.height = h;
-        draw(c.getContext("2d"), w, h);
+        const ctx = c.getContext("2d"), fillText = ctx.fillText.bind(ctx);
+        ctx.fillText = (t, x, y, maxW) => {
+          const room = ctx.textAlign === "center" ? Math.min(x, w - x) * 2 : ctx.textAlign === "right" ? x : w - x;
+          fillText(t, x, y, Math.max(10, Math.min(maxW || Infinity, room - 8)));
+        };
+        draw(ctx, w, h);
         const t = new T3.CanvasTexture(c); t.encoding = T3.sRGBEncoding; t.anisotropy = 4; return t;
       };
       const sign = (text, bg, fg, w, h, size) => canvasTex(w, h, (g) => {
         g.fillStyle = bg; g.fillRect(0, 0, w, h);
-        g.fillStyle = fg; g.font = `800 ${size}px "Barlow Condensed", "Arial Narrow", sans-serif`;
+        g.fillStyle = fg; g.font = `800 ${size}px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif`;
         g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, w / 2, h / 2 + 2);
       });
 
@@ -1799,10 +1813,10 @@ svg.plan { width: 100%; height: auto; display: block; }
         g.fillStyle = "#c4302b"; g.fillRect(0, 136, w, 62);
         g.fillStyle = "#ffffff"; rrect(g, 22, 148, 38, 38, 8); g.fill();
         g.fillStyle = "#c4302b"; g.fillRect(29, 157, 24, 8); g.fillRect(29, 169, 11, 8); g.fillRect(42, 169, 11, 8);
-        g.fillStyle = "#ffffff"; g.textAlign = "left"; g.font = '800 30px "Barlow Condensed", "Arial Narrow", sans-serif'; g.fillText("STOCKYARD", 72, 168);
-        g.textAlign = "right"; g.font = '600 18px "Barlow Condensed", "Arial Narrow", sans-serif'; g.fillText("PHARMACY", w - 22, 168);
+        g.fillStyle = "#ffffff"; g.textAlign = "left"; g.font = 'italic 900 30px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.fillText("STOCKYARD", 72, 168);
+        g.textAlign = "right"; g.font = '600 18px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.fillText("PHARMACY", w - 22, 168);
         // pass heading and name
-        g.textAlign = "center"; g.fillStyle = "#c4302b"; g.font = '800 44px "Barlow Condensed", "Arial Narrow", sans-serif'; g.fillText("PICKUP PASS", w / 2, 238);
+        g.textAlign = "center"; g.fillStyle = "#c4302b"; g.font = '800 44px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.fillText("PICKUP PASS", w / 2, 238);
         g.fillStyle = "#111418"; g.font = '600 24px -apple-system, "Segoe UI", sans-serif'; g.fillText(`${state.patient.first} ${state.patient.last}`, w / 2, 276);
         // QR code in a bordered card
         const box = 300, bx = (w - box) / 2, by = 300;
@@ -1826,7 +1840,7 @@ svg.plan { width: 100%; height: auto; display: block; }
           g.fillStyle = "#ffffff"; g.beginPath(); g.arc(w / 2, h * 0.45, 110, 0, Math.PI * 2); g.fill();
           g.strokeStyle = "#1d9a52"; g.lineWidth = 28; g.lineCap = "round"; g.lineJoin = "round";
           g.beginPath(); g.moveTo(w / 2 - 50, h * 0.45 + 2); g.lineTo(w / 2 - 10, h * 0.45 + 42); g.lineTo(w / 2 + 58, h * 0.45 - 42); g.stroke();
-          g.fillStyle = "#ffffff"; g.textAlign = "center"; g.font = '800 90px "Barlow Condensed", "Arial Narrow", sans-serif'; g.fillText("PAID", w / 2, h * 0.68);
+          g.fillStyle = "#ffffff"; g.textAlign = "center"; g.font = '800 90px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.fillText("PAID", w / 2, h * 0.68);
         }
       };
       const roundedRect = (w, h, r) => {
@@ -1955,7 +1969,7 @@ svg.plan { width: 100%; height: auto; display: block; }
         g.fillStyle = paid ? "#1d9a52" : "#1d4f9a"; g.fillRect(0, 0, w, h);
         g.fillStyle = "#ffffff"; g.textAlign = "center"; g.textBaseline = "middle";
         if (paid) {
-          g.font = '800 120px "Barlow Condensed", sans-serif'; g.fillText("PAID", w / 2, h * 0.42);
+          g.font = '800 120px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.fillText("PAID", w / 2, h * 0.42);
           g.font = '400 40px "Atkinson Hyperlegible", sans-serif'; g.fillText("No signature needed", w / 2, h * 0.74);
         } else {
           g.font = '700 58px "Atkinson Hyperlegible", sans-serif'; g.fillText("Scan your", w / 2, h * 0.36); g.fillText("pickup code", w / 2, h * 0.6);
