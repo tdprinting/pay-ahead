@@ -1,0 +1,30 @@
+STOCKYARD PAY AHEAD DEMO - HOW TO PUT IT ON AN IPHONE OR IPAD
+================================================================
+
+The "app" folder is a small website: the demo page, its icon and its app settings.
+To save it on an iPhone home screen with the icon, it has to be on the web first.
+The free, no-account-needed way:
+
+1. On your computer, go to  https://app.netlify.com/drop
+2. Drag the whole "app" folder onto that page.
+3. Netlify gives you a web address (something like https://random-name.netlify.app).
+   (Make a free account if you want that address to stay up for good.)
+4. On the iPhone or iPad, open that address in Safari.
+5. Tap the Share button (square with an arrow), then "Add to Home Screen".
+6. It shows up as "Pay Ahead" with the blue phone-and-checkmark icon,
+   and opens full screen like a normal app.
+
+Other files in this folder
+--------------------------
+- pay-ahead-demo.html ............ the main source file (edit this one)
+- Stockyard Pay Ahead Demo (standalone).html ... one-file copy you can email or AirDrop
+                                   and open in any browser (needs internet for fonts and 3D)
+- build_app.py ................... after editing pay-ahead-demo.html, run
+                                   "python build_app.py" to refresh the app folder
+                                   and the standalone copy
+
+Changing names, prescriptions or prices
+---------------------------------------
+Open pay-ahead-demo.html in a text editor and find "Demo settings" near the top
+of the script. The pharmacy name, prescriptions, prices, cards and sample
+patients are listed there.
