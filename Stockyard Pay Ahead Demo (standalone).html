@@ -1881,38 +1881,59 @@ svg.plan { width: 100%; height: auto; display: block; }
         g.fillText("Thank you. No signature needed.", w / 2, by + 96);
       };
 
-      // Plain kraft pharmacy bag (no logo), top folded closed, receipt stapled flat on the front.
-      // Every front layer sits a few millimetres in front of the one behind it, so nothing intersects.
+      // Closed kraft pharmacy bag: the upper walls pinch together into a flat seam that is folded over
+      // once, and the receipt is stapled through the fold, drapes down the slope, then hangs flat.
       const bag = new T3.Group();
-      const BW = 0.46, BH = 0.66, BD = 0.26, FRONT = BD / 2;
-      const kraftFace = canvasTex(460, 660, (g, w, h) => {
-        g.drawImage(kraftTex.image, 0, 0, w, h);
-        g.fillStyle = "rgba(90, 60, 25, .10)"; g.fillRect(0, h - 70, w, 70);           // bottom fold
-        g.fillStyle = "rgba(90, 60, 25, .16)"; g.fillRect(0, h - 72, w, 3);
-        g.fillStyle = "rgba(90, 60, 25, .08)"; g.fillRect(0, 0, 14, h); g.fillRect(w - 14, 0, 14, h); // side creases
-      });
-      const faceMat = new T3.MeshStandardMaterial({ map: kraftFace, roughness: 0.95 });
-      const bagBody = mesh(new T3.BoxGeometry(BW, BH, BD), [kraftDark, kraftDark, kraft, kraft, faceMat, faceMat]);
-      bagBody.position.y = BH / 2; bag.add(bagBody);
-      // side gussets: the inward fold on each side
+      const BW = 0.46, BD = 0.26, H1 = 0.5, H = 0.66, TT = 0.02; // width, depth, shoulder height, top height, seam thickness
+      // side profile (depth x height), extruded across the width
+      const prof = new T3.Shape();
+      prof.moveTo(-BD / 2, 0); prof.lineTo(BD / 2, 0); prof.lineTo(BD / 2, H1); prof.lineTo(TT / 2, H); prof.lineTo(-TT / 2, H); prof.lineTo(-BD / 2, H1); prof.lineTo(-BD / 2, 0);
+      const BEV = 0.006;
+      const bagGeo = new T3.ExtrudeGeometry(prof, { depth: BW - BEV * 2, bevelEnabled: true, bevelThickness: BEV, bevelSize: BEV, bevelSegments: 2, curveSegments: 1 });
+      bagGeo.rotateY(Math.PI / 2); bagGeo.translate(-(BW - BEV * 2) / 2, 0, 0);
+      const kraftSide = new T3.MeshStandardMaterial({ map: kraftTex, color: 0xf3e6d6, roughness: 0.96 });
+      const bagBody = mesh(bagGeo, [kraftSide, kraft]); bag.add(bagBody);
+      // gusset creases on each side panel: a center fold and two diagonal folds under the shoulder
+      const creaseMat = new T3.MeshBasicMaterial({ color: 0x6f4b22, transparent: true, opacity: 0.32 });
+      const line = (x, y1, z1, y2, z2) => {
+        const len = Math.hypot(y2 - y1, z2 - z1);
+        const m = new T3.Mesh(new T3.PlaneGeometry(0.005, len), creaseMat);
+        m.position.set(x, (y1 + y2) / 2, (z1 + z2) / 2); m.rotation.set(-Math.atan2(z2 - z1, y2 - y1), x > 0 ? Math.PI / 2 : -Math.PI / 2, 0, "YXZ");
+        bag.add(m);
+      };
       [-1, 1].forEach(sx => {
-        const crease = new T3.Mesh(new T3.PlaneGeometry(0.02, BH - 0.1), new T3.MeshBasicMaterial({ color: 0x7a5528, transparent: true, opacity: 0.3 }));
-        crease.position.set(sx * (BW / 2 + 0.002), BH / 2 + 0.03, 0); crease.rotation.y = sx * Math.PI / 2; bag.add(crease);
+        const x = sx * (BW / 2 + 0.002);
+        line(x, 0.05, 0, H1 - 0.04, 0);
+        line(x, H1 - 0.04, 0, H1 + 0.01, BD / 2 - 0.01);
+        line(x, H1 - 0.04, 0, H1 + 0.01, -BD / 2 + 0.01);
       });
-      // folded-over top: one flap laid down over the front
-      const flapH = 0.11, flapT = 0.012;
-      const flap = mesh(new T3.BoxGeometry(BW + 0.004, flapH, flapT), kraft);
-      flap.position.set(0, BH - flapH / 2, FRONT + flapT / 2 + 0.001); bag.add(flap);
-      const topEdge = mesh(new T3.BoxGeometry(BW + 0.004, 0.02, BD + 0.004), kraftDark);
-      topEdge.position.set(0, BH - 0.01, 0); bag.add(topEdge);
-      // receipt stapled through the flap, hanging flat down the front
-      const RW = 0.19, RH = 0.34, RZ = FRONT + flapT + 0.008;
-      const label = new T3.Mesh(new T3.PlaneGeometry(RW, RH), new T3.MeshStandardMaterial({ roughness: 0.85, map: canvasTex(300, 570, drawReceipt) }));
-      label.position.set(0.04, BH - 0.035 - RH / 2, RZ); label.castShadow = true; bag.add(label);
+      // bottom fold line on the front
+      const fold = new T3.Mesh(new T3.PlaneGeometry(BW - 0.02, 0.004), creaseMat); fold.position.set(0, 0.07, BD / 2 + BEV + 0.002); bag.add(fold);
+
+      // the folded-over seam and the receipt live on the sloped front of the top
+      const slope = Math.atan2(BD / 2 - TT / 2, H - H1), slopeLen = Math.hypot(BD / 2 - TT / 2, H - H1);
+      const top = new T3.Group(); top.position.set(0, H, TT / 2 + BEV); top.rotation.x = -slope; bag.add(top);
+      const flap = mesh(new T3.BoxGeometry(BW + 0.004, 0.09, 0.012), kraftDark); flap.position.set(0, -0.045, 0.008); top.add(flap);
+      const flapEdge = new T3.Mesh(new T3.PlaneGeometry(BW + 0.004, 0.004), creaseMat); flapEdge.position.set(0, -0.089, 0.0145); top.add(flapEdge);
+      const RW = 0.19, A_LEN = slopeLen - 0.03, B_LEN = 0.2, TOTAL = A_LEN + B_LEN, RZ = 0.022, RX = 0.04;
+      const receiptMat = new T3.MeshStandardMaterial({ roughness: 0.85, map: canvasTex(300, 570, drawReceipt), side: T3.DoubleSide });
+      const segment = (len, v0, v1) => {
+        const g2 = new T3.PlaneGeometry(RW, len), uv = g2.attributes.uv;
+        for (let k = 0; k < uv.count; k++) uv.setY(k, uv.getY(k) > 0.5 ? v0 : v1);
+        return g2;
+      };
+      // part A: from the staple, down the slope (drawn on top of the flap)
+      const recA = new T3.Mesh(segment(A_LEN, 1, 1 - A_LEN / TOTAL), receiptMat);
+      recA.position.set(RX, -0.03 - A_LEN / 2, RZ); recA.castShadow = true; top.add(recA);
+      // part B: hangs straight down the front, just clear of the paper
+      const bendY = H - Math.cos(slope) * (0.03 + A_LEN), bendZ = TT / 2 + BEV + Math.sin(slope) * (0.03 + A_LEN) + RZ / Math.cos(slope);
+      const recB = new T3.Mesh(segment(B_LEN, 1 - A_LEN / TOTAL, 0), receiptMat);
+      recB.position.set(RX, bendY - B_LEN / 2, Math.max(bendZ, BD / 2 + BEV + 0.012)); recB.castShadow = true; bag.add(recB);
+      const label = { material: receiptMat }; // the counter scene refreshes this map with the patient's details
       const steel = std(0xc9ced6, 0.25, 0.9);
-      [-0.05, 0.05].forEach(dx => {
-        const st = mesh(new T3.BoxGeometry(0.045, 0.006, 0.004), steel, false, false);
-        st.position.set(0.04 + dx, BH - 0.06, RZ + 0.004); bag.add(st);
+      [-0.045, 0.045].forEach(dx => {
+        const st = mesh(new T3.BoxGeometry(0.04, 0.006, 0.004), steel, false, false);
+        st.position.set(RX + dx, -0.05, RZ + 0.004); top.add(st);
       });
       bag.scale.setScalar(1.12);
       scene.add(bag);
