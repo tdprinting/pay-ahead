@@ -1822,106 +1822,82 @@ svg.plan { width: 100%; height: auto; display: block; }
       const kraft = new T3.MeshStandardMaterial({ map: kraftTex, roughness: 0.96, metalness: 0 });
       const kraftDark = new T3.MeshStandardMaterial({ map: kraftTex, color: 0xd9c4ae, roughness: 0.96 });
 
-      const drawReceipt = (g, w, h) => {
-        const items = MEDS.filter((m, k) => state.picked[k]);
-        const sum = items.reduce((a, m) => a + m.price, 0);
-        g.fillStyle = "#fbfbf8"; g.fillRect(0, 0, w, h);
-        g.fillStyle = "#111418"; g.textAlign = "center"; g.textBaseline = "alphabetic";
-        let hs = 40; do { g.font = `800 ${hs}px "Barlow Condensed", "Arial Narrow", sans-serif`; hs -= 2; } while (g.measureText("STOCKYARD PHARMACY").width > w - 36 && hs > 16);
-        g.fillText("STOCKYARD PHARMACY", w / 2, 58);
-        g.font = '400 20px "Atkinson Hyperlegible", sans-serif'; g.fillStyle = "#5f6672";
-        g.fillText("Pay Ahead pickup", w / 2, 86);
-        g.strokeStyle = "#9aa1ab"; g.setLineDash([6, 5]); g.lineWidth = 2;
-        g.beginPath(); g.moveTo(20, 104); g.lineTo(w - 20, 104); g.stroke();
-        g.textAlign = "left"; g.fillStyle = "#111418"; g.font = '700 26px "Atkinson Hyperlegible", sans-serif';
-        g.fillText(`${state.patient.first} ${state.patient.last}`, 24, 142);
-        g.font = '400 20px "Atkinson Hyperlegible", sans-serif'; g.fillStyle = "#5f6672";
-        g.fillText("Order RX-48213", 24, 170);
-        let y = 214;
-        items.forEach(m => {
-          g.fillStyle = "#111418"; g.font = '400 21px "Atkinson Hyperlegible", sans-serif'; g.textAlign = "left";
-          let fs = 21; do { g.font = `400 ${fs}px "Atkinson Hyperlegible", sans-serif`; fs--; } while (g.measureText(m.name).width > w - 120 && fs > 12);
-          g.fillText(m.name, 24, y);
-          g.textAlign = "right"; g.fillText(money(m.price), w - 24, y);
-          y += 34;
-        });
-        g.beginPath(); g.moveTo(20, y - 12); g.lineTo(w - 20, y - 12); g.stroke(); g.setLineDash([]);
-        g.textAlign = "left"; g.font = '700 24px "Atkinson Hyperlegible", sans-serif'; g.fillStyle = "#111418";
-        g.fillText("Total", 24, y + 22); g.textAlign = "right"; g.fillText(money(sum), w - 24, y + 22);
-        g.fillStyle = "#1d9a52"; g.fillRect(24, y + 44, w - 48, 58);
-        g.fillStyle = "#ffffff"; g.textAlign = "center"; g.font = '800 38px "Barlow Condensed", sans-serif';
-        g.fillText("PAID AHEAD", w / 2, y + 86);
-        g.fillStyle = "#111418"; // barcode
-        let bx = 40; const by = y + 128;
-        for (let k = 0; bx < w - 40; k++) { const bw = 2 + ((k * 7919) % 5); if (k % 2 === 0) g.fillRect(bx, by, bw, 64); bx += bw + 1; }
-        g.font = '400 18px "Atkinson Hyperlegible", sans-serif'; g.fillStyle = "#5f6672";
-        g.fillText("Thank you. No signature needed.", w / 2, by + 96);
-      };
 
-      // Closed kraft pharmacy bag: the upper walls pinch together into a flat seam that is folded over
-      // once, and the receipt is stapled through the fold, drapes down the slope, then hangs flat.
+      // Closed kraft pharmacy bag, the way they are closed at the counter: the front stays flat, the back
+      // slopes in to meet it, and the closed top is folded down onto the front as a neat band. The receipt
+      // is stapled through that band and bends gently in against the front as it hangs.
       const bag = new T3.Group();
-      const BW = 0.46, BD = 0.26, H1 = 0.5, H = 0.66, TT = 0.02; // width, depth, shoulder height, top height, seam thickness
-      // side profile (depth x height), extruded across the width
-      const prof = new T3.Shape();
-      prof.moveTo(-BD / 2, 0); prof.lineTo(BD / 2, 0); prof.lineTo(BD / 2, H1); prof.lineTo(TT / 2, H); prof.lineTo(-TT / 2, H); prof.lineTo(-BD / 2, H1); prof.lineTo(-BD / 2, 0);
-      const BEV = 0.006;
-      const bagGeo = new T3.ExtrudeGeometry(prof, { depth: BW - BEV * 2, bevelEnabled: true, bevelThickness: BEV, bevelSize: BEV, bevelSegments: 2, curveSegments: 1 });
+      const BW = 0.46, BD = 0.25, H = 0.64, HB = 0.5, TT = 0.02, BEV = 0.006; // width, depth, height, back shoulder, top thickness
+      const FZ = BD / 2 + BEV; // front surface
+      const prof = new T3.Shape(); // side profile: z (front +) by y
+      prof.moveTo(-BD / 2, 0); prof.lineTo(BD / 2, 0); prof.lineTo(BD / 2, H); prof.lineTo(BD / 2 - TT, H); prof.lineTo(-BD / 2, HB); prof.lineTo(-BD / 2, 0);
+      const bagGeo = new T3.ExtrudeGeometry(prof, { depth: BW - BEV * 2, bevelEnabled: true, bevelThickness: BEV, bevelSize: BEV, bevelSegments: 3, curveSegments: 1 });
       bagGeo.rotateY(Math.PI / 2); bagGeo.translate(-(BW - BEV * 2) / 2, 0, 0);
-      const kraftSide = new T3.MeshStandardMaterial({ map: kraftTex, color: 0xf3e6d6, roughness: 0.96 });
-      const bagBody = mesh(bagGeo, [kraftSide, kraft]); bag.add(bagBody);
-      // gusset creases on each side panel: a center fold and two diagonal folds under the shoulder
-      const creaseMat = new T3.MeshBasicMaterial({ color: 0x6f4b22, transparent: true, opacity: 0.32 });
-      const line = (x, y1, z1, y2, z2) => {
+      bagGeo.scale(1, 1, -1); bagGeo.computeVertexNormals(); // profile is drawn with +z at the back; flip so the flat wall faces front
+      const kraftSide = new T3.MeshStandardMaterial({ map: kraftTex, color: 0xf3e6d6, roughness: 0.96, side: T3.DoubleSide });
+      const kraftBody = new T3.MeshStandardMaterial({ map: kraftTex, roughness: 0.96, side: T3.DoubleSide });
+      bag.add(mesh(bagGeo, [kraftSide, kraftBody]));
+
+      // creases: side gusset (center fold + diagonal tuck under the sloped back) and the bottom fold
+      const creaseMat = new T3.MeshBasicMaterial({ color: 0x6f4b22, transparent: true, opacity: 0.28 });
+      const crease = (x, y1, z1, y2, z2, wdt = 0.005) => {
         const len = Math.hypot(y2 - y1, z2 - z1);
-        const m = new T3.Mesh(new T3.PlaneGeometry(0.005, len), creaseMat);
+        const m = new T3.Mesh(new T3.PlaneGeometry(wdt, len), creaseMat);
         m.position.set(x, (y1 + y2) / 2, (z1 + z2) / 2); m.rotation.set(-Math.atan2(z2 - z1, y2 - y1), x > 0 ? Math.PI / 2 : -Math.PI / 2, 0, "YXZ");
         bag.add(m);
       };
       [-1, 1].forEach(sx => {
         const x = sx * (BW / 2 + 0.002);
-        line(x, 0.05, 0, H1 - 0.04, 0);
-        line(x, H1 - 0.04, 0, H1 + 0.01, BD / 2 - 0.01);
-        line(x, H1 - 0.04, 0, H1 + 0.01, -BD / 2 + 0.01);
+        crease(x, 0.05, 0, HB - 0.02, 0);
+        crease(x, HB - 0.02, 0, H - 0.03, BD / 2 - 0.02);
       });
-      // bottom fold line on the front
-      const fold = new T3.Mesh(new T3.PlaneGeometry(BW - 0.02, 0.004), creaseMat); fold.position.set(0, 0.07, BD / 2 + BEV + 0.002); bag.add(fold);
+      const bottomFold = new T3.Mesh(new T3.PlaneGeometry(BW - 0.03, 0.004), creaseMat);
+      bottomFold.position.set(0, 0.07, FZ + 0.001); bag.add(bottomFold);
 
-      // the folded-over seam and the receipt live on the sloped front of the top
-      const slope = Math.atan2(BD / 2 - TT / 2, H - H1), slopeLen = Math.hypot(BD / 2 - TT / 2, H - H1);
-      const top = new T3.Group(); top.position.set(0, H, TT / 2 + BEV); top.rotation.x = -slope; bag.add(top);
-      // the seam is folded down over the whole sloped top
-      const FL = slopeLen + 0.008;
-      const flap = mesh(new T3.BoxGeometry(BW + 0.004, FL, 0.012), kraftDark); flap.position.set(0, -FL / 2, 0.008); top.add(flap);
-      const flapEdge = new T3.Mesh(new T3.PlaneGeometry(BW + 0.004, 0.004), creaseMat); flapEdge.position.set(0, -FL + 0.003, 0.0145); top.add(flapEdge);
-      // The receipt is stapled at the very top, follows the folded slope, curves over the shoulder and
-      // hangs down the front. It is a flexible strip kept a few millimetres off the paper the whole way.
-      const RW = 0.19, RX = 0.04, RLEN = 0.36;
-      const sinS = Math.sin(slope), cosS = Math.cos(slope);
-      const onSlope = (d, off) => [TT / 2 + BEV + d * sinS + off * cosS, H - d * cosS + off * sinS]; // [z, y] in bag space
-      const FRONTZ = BD / 2 + BEV + 0.016;
-      const path = [onSlope(0.02, 0.022), onSlope(0.08, 0.022), onSlope(0.15, 0.022), onSlope(slopeLen, 0.022),
-        [FRONTZ + 0.002, H1 - 0.03], [FRONTZ, H1 - 0.12], [FRONTZ, H1 - 0.3]];
-      const curve = new T3.CatmullRomCurve3(path.map(([z, y]) => new T3.Vector3(0, y, z)), false, "centripetal");
-      const N = 48, uMax = Math.min(1, RLEN / curve.getLength());
-      const pos = [], uvs = [], idx = [];
-      for (let k = 0; k <= N; k++) {
-        const pt = curve.getPointAt(uMax * k / N);
-        pos.push(RX - RW / 2, pt.y, pt.z, RX + RW / 2, pt.y, pt.z);
-        uvs.push(0, 1 - k / N, 1, 1 - k / N);
-        if (k < N) { const a = k * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
-      }
-      const recGeo = new T3.BufferGeometry();
-      recGeo.setAttribute("position", new T3.Float32BufferAttribute(pos, 3));
-      recGeo.setAttribute("uv", new T3.Float32BufferAttribute(uvs, 2));
-      recGeo.setIndex(idx); recGeo.computeVertexNormals();
-      const receiptMat = new T3.MeshStandardMaterial({ roughness: 0.85, map: canvasTex(300, 570, drawReceipt), side: T3.DoubleSide });
-      const rec = new T3.Mesh(recGeo, receiptMat); rec.castShadow = true; bag.add(rec);
-      const label = { material: receiptMat }; // the counter scene refreshes this map with the patient's details
+      // paper wrinkles: faint creases (a dark edge beside a light edge, the way kraft catches light),
+      // corner gusset folds near the bottom, and a soft shadow under the folded band
+      let ws = 11; const wr = () => (ws = (ws * 16807) % 2147483647) / 2147483647;
+      const wrinkleTex = (w, h, shade) => canvasTex(w, h, g => {
+        g.clearRect(0, 0, w, h);
+        const creaseLine = (x1, y1, x2, y2, a) => {
+          const nx = -(y2 - y1), ny = x2 - x1, nl = Math.hypot(nx, ny) || 1;
+          g.lineCap = "round";
+          g.strokeStyle = `rgba(70, 44, 18, ${a})`; g.lineWidth = 2.2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+          g.strokeStyle = `rgba(255, 240, 214, ${a * 0.9})`; g.lineWidth = 1.6; g.beginPath();
+          g.moveTo(x1 + nx / nl * 2.4, y1 + ny / nl * 2.4); g.lineTo(x2 + nx / nl * 2.4, y2 + ny / nl * 2.4); g.stroke();
+        };
+        for (let k = 0; k < 14; k++) { // random handling creases, mostly gentle diagonals
+          const x = wr() * w, y = wr() * h, len = 40 + wr() * 140, ang = (wr() - 0.5) * 1.6 + (wr() < 0.5 ? 0 : Math.PI / 2);
+          const mx = x + Math.cos(ang) * len * 0.5 + (wr() - 0.5) * 18, my = y + Math.sin(ang) * len * 0.5 + (wr() - 0.5) * 18;
+          creaseLine(x, y, mx, my, 0.1 + wr() * 0.1);
+          creaseLine(mx, my, x + Math.cos(ang) * len, y + Math.sin(ang) * len, 0.08 + wr() * 0.08);
+        }
+        creaseLine(18, h - 6, 60, h - 70, 0.16); creaseLine(w - 18, h - 6, w - 60, h - 70, 0.16); // gusset folds at the bottom corners
+        creaseLine(6, h * 0.12, 8, h - 20, 0.12); creaseLine(w - 6, h * 0.12, w - 8, h - 20, 0.12); // edge folds
+        if (shade) { const gr = g.createLinearGradient(0, 0, 0, 46); gr.addColorStop(0, "rgba(60, 38, 14, .28)"); gr.addColorStop(1, "rgba(60, 38, 14, 0)"); g.fillStyle = gr; g.fillRect(0, 0, w, 46); }
+      });
+      const frontH = H - 0.1 - 0.004;
+      const frontWr = new T3.Mesh(new T3.PlaneGeometry(BW - 0.008, frontH), new T3.MeshBasicMaterial({ map: wrinkleTex(460, 540, true), transparent: true, depthWrite: false }));
+      frontWr.position.set(0, frontH / 2, FZ + 0.0015); frontWr.renderOrder = 1; bag.add(frontWr);
+      const backWr = new T3.Mesh(new T3.PlaneGeometry(BW - 0.008, HB - 0.01), new T3.MeshBasicMaterial({ map: wrinkleTex(460, 500, false), transparent: true, depthWrite: false }));
+      backWr.position.set(0, (HB - 0.01) / 2, -FZ - 0.0015); backWr.rotation.y = Math.PI; backWr.renderOrder = 1; bag.add(backWr);
+
+      // the folded-down top: a rounded fold along the top edge, then a flat band lying on the front
+      const BAND_H = 0.1, BAND_T = 0.018;
+      // the fold: a half-round edge joining the top of the bag to the band, flush with both
+      const roll = mesh(new T3.CylinderGeometry((BAND_T + TT) / 2, (BAND_T + TT) / 2, BW + 0.004, 24, 1, false, 0, Math.PI), kraftDark);
+      roll.rotation.set(0, 0, Math.PI / 2); roll.rotation.order = "ZYX";
+      roll.position.set(0, H, FZ + BAND_T / 2 + 0.001 - (BAND_T + TT) / 2 + BAND_T / 2); bag.add(roll);
+      const band = mesh(new T3.BoxGeometry(BW + 0.004, BAND_H, BAND_T), kraftDark);
+      band.position.set(0, H - BAND_H / 2, FZ + BAND_T / 2 + 0.001); bag.add(band);
+      [0.03, 0.065].forEach(dy => { const fl = new T3.Mesh(new T3.PlaneGeometry(BW - 0.02, 0.003), creaseMat); fl.position.set(0, H - dy, FZ + BAND_T + 0.0025); bag.add(fl); });
+      const bandEdge = new T3.Mesh(new T3.PlaneGeometry(BW + 0.004, 0.004), creaseMat);
+      bandEdge.position.set(0, H - BAND_H + 0.004, FZ + BAND_T + 0.0025); bag.add(bandEdge);
+
       const steel = std(0xc9ced6, 0.25, 0.9);
-      [-0.045, 0.045].forEach(dx => { // two staples through the receipt and the folded top
+      [-0.09, 0.09].forEach(dx => { // two staples holding the folded top closed (the receipt is digital)
         const st = mesh(new T3.BoxGeometry(0.04, 0.006, 0.004), steel, false, false);
-        st.position.set(RX + dx, -0.035, 0.0265); top.add(st);
+        st.position.set(dx, H - 0.045, FZ + BAND_T + 0.004); bag.add(st);
       });
       bag.scale.setScalar(1.12);
       scene.add(bag);
@@ -1959,7 +1935,7 @@ svg.plan { width: 100%; height: auto; display: block; }
       const sleeve = mesh(new T3.CylinderGeometry(0.17, 0.2, 0.7, 16), std(0x3a5a8c, 0.9));
       sleeve.position.set(0.06, -0.85, -0.12); phone.add(sleeve);
 
-      s3 = { T3, renderer, scene, camera, phone, scr, screenMat, drawPass, canvasTex, scanLine, gun, beam, bag, label, drawReceipt, flash, TOP, dispMat, drawDisplay, running: false, t0: 0, paid: false, raf: 0 };
+      s3 = { T3, renderer, scene, camera, phone, scr, screenMat, drawPass, canvasTex, scanLine, gun, beam, bag, flash, TOP, dispMat, drawDisplay, running: false, t0: 0, paid: false, raf: 0 };
       return s3;
     } catch (err) {
       console.error(err);
@@ -1978,8 +1954,6 @@ svg.plan { width: 100%; height: auto; display: block; }
     // redraw the pass with the current patient's name
     S.screenMat.map.dispose();
     S.screenMat.map = S.canvasTex(512, 1040, (g, w, h) => S.drawPass(g, w, h, false));
-    S.label.material.map.dispose();
-    S.label.material.map = S.canvasTex(300, 570, S.drawReceipt);
     S.dispMat.map.dispose();
     S.dispMat.map = S.canvasTex(560, 400, (g, w, h) => S.drawDisplay(g, w, h, false));
     S.paid = false;
