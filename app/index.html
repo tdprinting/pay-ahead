@@ -1846,7 +1846,8 @@ svg.plan { width: 100%; height: auto; display: block; }
         const sum = items.reduce((a, m) => a + m.price, 0);
         g.fillStyle = "#fbfbf8"; g.fillRect(0, 0, w, h);
         g.fillStyle = "#111418"; g.textAlign = "center"; g.textBaseline = "alphabetic";
-        g.font = '800 40px "Barlow Condensed", "Arial Narrow", sans-serif'; g.fillText("STOCKYARD PHARMACY", w / 2, 58);
+        let hs = 40; do { g.font = `800 ${hs}px "Barlow Condensed", "Arial Narrow", sans-serif`; hs -= 2; } while (g.measureText("STOCKYARD PHARMACY").width > w - 36 && hs > 16);
+        g.fillText("STOCKYARD PHARMACY", w / 2, 58);
         g.font = '400 20px "Atkinson Hyperlegible", sans-serif'; g.fillStyle = "#5f6672";
         g.fillText("Pay Ahead pickup", w / 2, 86);
         g.strokeStyle = "#9aa1ab"; g.setLineDash([6, 5]); g.lineWidth = 2;
@@ -1858,6 +1859,7 @@ svg.plan { width: 100%; height: auto; display: block; }
         let y = 214;
         items.forEach(m => {
           g.fillStyle = "#111418"; g.font = '400 21px "Atkinson Hyperlegible", sans-serif'; g.textAlign = "left";
+          let fs = 21; do { g.font = `400 ${fs}px "Atkinson Hyperlegible", sans-serif`; fs--; } while (g.measureText(m.name).width > w - 120 && fs > 12);
           g.fillText(m.name, 24, y);
           g.textAlign = "right"; g.fillText(money(m.price), w - 24, y);
           y += 34;
@@ -1907,27 +1909,38 @@ svg.plan { width: 100%; height: auto; display: block; }
       // the folded-over seam and the receipt live on the sloped front of the top
       const slope = Math.atan2(BD / 2 - TT / 2, H - H1), slopeLen = Math.hypot(BD / 2 - TT / 2, H - H1);
       const top = new T3.Group(); top.position.set(0, H, TT / 2 + BEV); top.rotation.x = -slope; bag.add(top);
-      const flap = mesh(new T3.BoxGeometry(BW + 0.004, 0.09, 0.012), kraftDark); flap.position.set(0, -0.045, 0.008); top.add(flap);
-      const flapEdge = new T3.Mesh(new T3.PlaneGeometry(BW + 0.004, 0.004), creaseMat); flapEdge.position.set(0, -0.089, 0.0145); top.add(flapEdge);
-      const RW = 0.19, A_LEN = slopeLen - 0.03, B_LEN = 0.2, TOTAL = A_LEN + B_LEN, RZ = 0.022, RX = 0.04;
+      // the seam is folded down over the whole sloped top
+      const FL = slopeLen + 0.008;
+      const flap = mesh(new T3.BoxGeometry(BW + 0.004, FL, 0.012), kraftDark); flap.position.set(0, -FL / 2, 0.008); top.add(flap);
+      const flapEdge = new T3.Mesh(new T3.PlaneGeometry(BW + 0.004, 0.004), creaseMat); flapEdge.position.set(0, -FL + 0.003, 0.0145); top.add(flapEdge);
+      // The receipt is stapled at the very top, follows the folded slope, curves over the shoulder and
+      // hangs down the front. It is a flexible strip kept a few millimetres off the paper the whole way.
+      const RW = 0.19, RX = 0.04, RLEN = 0.36;
+      const sinS = Math.sin(slope), cosS = Math.cos(slope);
+      const onSlope = (d, off) => [TT / 2 + BEV + d * sinS + off * cosS, H - d * cosS + off * sinS]; // [z, y] in bag space
+      const FRONTZ = BD / 2 + BEV + 0.016;
+      const path = [onSlope(0.02, 0.022), onSlope(0.08, 0.022), onSlope(0.15, 0.022), onSlope(slopeLen, 0.022),
+        [FRONTZ + 0.002, H1 - 0.03], [FRONTZ, H1 - 0.12], [FRONTZ, H1 - 0.3]];
+      const curve = new T3.CatmullRomCurve3(path.map(([z, y]) => new T3.Vector3(0, y, z)), false, "centripetal");
+      const N = 48, uMax = Math.min(1, RLEN / curve.getLength());
+      const pos = [], uvs = [], idx = [];
+      for (let k = 0; k <= N; k++) {
+        const pt = curve.getPointAt(uMax * k / N);
+        pos.push(RX - RW / 2, pt.y, pt.z, RX + RW / 2, pt.y, pt.z);
+        uvs.push(0, 1 - k / N, 1, 1 - k / N);
+        if (k < N) { const a = k * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+      }
+      const recGeo = new T3.BufferGeometry();
+      recGeo.setAttribute("position", new T3.Float32BufferAttribute(pos, 3));
+      recGeo.setAttribute("uv", new T3.Float32BufferAttribute(uvs, 2));
+      recGeo.setIndex(idx); recGeo.computeVertexNormals();
       const receiptMat = new T3.MeshStandardMaterial({ roughness: 0.85, map: canvasTex(300, 570, drawReceipt), side: T3.DoubleSide });
-      const segment = (len, v0, v1) => {
-        const g2 = new T3.PlaneGeometry(RW, len), uv = g2.attributes.uv;
-        for (let k = 0; k < uv.count; k++) uv.setY(k, uv.getY(k) > 0.5 ? v0 : v1);
-        return g2;
-      };
-      // part A: from the staple, down the slope (drawn on top of the flap)
-      const recA = new T3.Mesh(segment(A_LEN, 1, 1 - A_LEN / TOTAL), receiptMat);
-      recA.position.set(RX, -0.03 - A_LEN / 2, RZ); recA.castShadow = true; top.add(recA);
-      // part B: hangs straight down the front, just clear of the paper
-      const bendY = H - Math.cos(slope) * (0.03 + A_LEN), bendZ = TT / 2 + BEV + Math.sin(slope) * (0.03 + A_LEN) + RZ / Math.cos(slope);
-      const recB = new T3.Mesh(segment(B_LEN, 1 - A_LEN / TOTAL, 0), receiptMat);
-      recB.position.set(RX, bendY - B_LEN / 2, Math.max(bendZ, BD / 2 + BEV + 0.012)); recB.castShadow = true; bag.add(recB);
+      const rec = new T3.Mesh(recGeo, receiptMat); rec.castShadow = true; bag.add(rec);
       const label = { material: receiptMat }; // the counter scene refreshes this map with the patient's details
       const steel = std(0xc9ced6, 0.25, 0.9);
-      [-0.045, 0.045].forEach(dx => {
+      [-0.045, 0.045].forEach(dx => { // two staples through the receipt and the folded top
         const st = mesh(new T3.BoxGeometry(0.04, 0.006, 0.004), steel, false, false);
-        st.position.set(RX + dx, -0.05, RZ + 0.004); top.add(st);
+        st.position.set(RX + dx, -0.035, 0.0265); top.add(st);
       });
       bag.scale.setScalar(1.12);
       scene.add(bag);
