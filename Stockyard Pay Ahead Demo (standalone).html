@@ -115,6 +115,7 @@ button, input { touch-action: manipulation; }
 .island { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 98px; height: 28px; background: #000; border-radius: 20px; z-index: 60; }
 .statusbar { position: absolute; top: 0; left: 0; right: 0; height: 46px; display: flex; justify-content: space-between; align-items: center; padding: 6px 30px 0; font-weight: 600; font-size: 14px; z-index: 55; pointer-events: none; color: var(--p-ink); font-variant-numeric: tabular-nums; }
 .statusbar.light { color: #fff; }
+.statusbar.solid { background: var(--p-bg); box-shadow: 0 1px 0 var(--p-line); }
 .statusbar .icons { display: flex; gap: 5px; align-items: center; }
 .statusbar .icons i { display: block; width: 22px; height: 11px; border: 1.5px solid currentColor; border-radius: 3.5px; position: relative; opacity: .9; }
 .statusbar .icons i::after { content: ""; position: absolute; inset: 1.5px 5px 1.5px 1.5px; background: currentColor; border-radius: 1px; }
@@ -248,6 +249,7 @@ button, input { touch-action: manipulation; }
 .cue-tag::after { content: ""; position: absolute; left: calc(50% - var(--shift, 0px)); margin-left: -6px; border: 6px solid transparent; }
 .cue-tag.below { top: calc(100% - 13px); }
 .cue-tag.above { bottom: calc(100% - 13px); }
+.cue-tag.below.out { top: calc(100% + 6px); }
 .cue-tag::after { display: none; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 122, 0, .5); } 100% { box-shadow: 0 0 0 14px rgba(255, 122, 0, 0); } }
 .finger { position: absolute; z-index: 80; left: 50%; top: 85%; width: 42px; height: 42px; margin: -21px 0 0 -21px; border-radius: 50%; background: rgba(30, 30, 30, .26); border: 2.5px solid rgba(255, 255, 255, .95);
@@ -531,7 +533,7 @@ svg.plan { width: 100%; height: auto; display: block; }
               <div class="stamp">Today <span class="clock-sm">9:41</span></div>
               <div class="bubble"><span class="pharm">Stockyard Pharmacy</span>: Your prescriptions are ready for pickup. Pay ahead and skip the line here:<br><a href="#" id="rxlink">pay.stockyardrx.example/r/8KD2Q</a></div>
               <div class="typing" id="typing" hidden><i></i><i></i><i></i></div>
-              <div class="bubble" id="bubble2" hidden><span class="pharm">Stockyard Pharmacy</span>: Thanks, <span class="pfirst">Maria</span>. You're paid! Show this pickup code at the <span class="pdest">green Pay Ahead line</span>:<br><a href="#" id="qrlink">pay.stockyardrx.example/pass/48213</a></div>
+              <div class="bubble" id="bubble2" hidden><span class="pharm">Stockyard Pharmacy</span>: Thanks, <span class="pfirst">Maria</span>. You're paid! Show this pickup code at the <span class="pdest">green Pay Ahead line</span>:<br><a href="#" id="qrlink">pay.stockyardrx.example/p/48213</a></div>
             </div>
             <div class="compose"><span>Text Message</span></div>
           </section>
@@ -1028,6 +1030,7 @@ svg.plan { width: 100%; height: auto; display: block; }
   /* ---- Navigation ---- */
   function showScreen(name) {
     $$(".scr").forEach(s => s.classList.toggle("active", s.dataset.s === name));
+    $("#statusbar").classList.toggle("solid", name === "benefits");
     if (name !== "scan") stop3D();
     if (name !== "map") stopAisle();
     $("#statusbar").classList.toggle("light", name === "lock");
@@ -1163,7 +1166,7 @@ svg.plan { width: 100%; height: auto; display: block; }
     last = key;
     cue.style.left = left + "px"; cue.style.top = top + "px";
     cue.style.width = (right - left) + "px"; cue.style.height = (bottom - top) + "px";
-    cueTag.className = "cue-tag " + (below ? "below" : "above");
+    cueTag.className = "cue-tag " + (below ? "below" : "above") + (below && cueEl.tagName === "A" ? " out" : "");
     cueTag.style.setProperty("--shift", Math.round(want - (cx - w / 2)) + "px");
   }
   (function track() { positionCue(); requestAnimationFrame(track); })();
