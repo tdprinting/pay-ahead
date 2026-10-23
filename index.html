@@ -1,0 +1,2270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pay Ahead">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#eceef1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1319" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Interactive Pay Ahead walkthrough for pharmacy pickup.">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Stockyard Pay Ahead Demo</title>
+<script>
+/* Brand switch: ?brand=costco or the "Costco mode" button (remembered on this device) re-skins the whole demo. */
+(function () {
+  var b = "";
+  try { var q = /[?&]brand=(\w+)/.exec(location.search); if (q) localStorage.setItem("payAheadBrand", q[1] === "costco" ? "costco" : ""); b = localStorage.getItem("payAheadBrand") || ""; } catch (e) { b = /[?&]brand=costco/.test(location.search) ? "costco" : ""; }
+  if (b === "costco") { document.documentElement.setAttribute("data-brand", "costco"); document.title = "Costco Pharmacy Pay Ahead Demo"; }
+})();
+</script>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,600;0,700;0,800;0,900;1,800;1,900&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: the phone is the stage and fills the screen height. A frosted-glass coach floats over it
+   (bottom dock on phones and tablets, side card on desktop) saying what is happening and what to do.
+   On an iPhone the demo runs full screen, like the real thing. The last three steps swap the phone
+   for the pickup area, the QR scan, and a benefits summary. */
+:root {
+  --bg: #eceef1;
+  --surface: #ffffff;
+  --sunken: #f4f5f7;
+  --ink: #17202c;
+  --muted: #5a6474;
+  --line: #d5dae1;
+  --red: #c4302b;
+  --blue: #1d4f9a;
+  --blue-ink: #ffffff;
+  --cue: #ff7a00;
+  --go: #1d9a52;
+  --wait: #d9a400;
+  --consult: #2e6db3;
+  --floor: #f5f6f8;
+  --counter: #dfe3e8;
+  --rack: #c9cfd7;
+  --glass: rgba(255, 255, 255, .74);
+  --glass-strong: rgba(255, 255, 255, .9);
+  --glass-line: rgba(255, 255, 255, .7);
+  --glass-shadow: 0 10px 40px rgba(16, 30, 60, .18), 0 1px 0 rgba(255, 255, 255, .6) inset;
+  --tint1: rgba(29, 79, 154, .14);
+  --tint2: rgba(196, 48, 43, .10);
+  --inset-b: 0px;
+  --k: 1;
+  --font-sign: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1319; --surface: #181e27; --sunken: #131820; --ink: #e6e9ee; --muted: #9aa3b1; --line: #2a323e;
+    --red: #e5544d; --blue: #6f9be6; --blue-ink: #0b1630; --cue: #ff9433; --go: #3dd07f; --wait: #f2c63a;
+    --consult: #70a8ec; --floor: #161c24; --counter: #252d39; --rack: #303a48; color-scheme: dark;
+    --glass: rgba(22, 28, 37, .72); --glass-strong: rgba(22, 28, 37, .92); --glass-line: rgba(255, 255, 255, .1);
+    --glass-shadow: 0 12px 40px rgba(0, 0, 0, .45), 0 1px 0 rgba(255, 255, 255, .06) inset; --tint1: rgba(111, 155, 230, .14); --tint2: rgba(229, 84, 77, .08);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1319; --surface: #181e27; --sunken: #131820; --ink: #e6e9ee; --muted: #9aa3b1; --line: #2a323e;
+  --red: #e5544d; --blue: #6f9be6; --blue-ink: #0b1630; --cue: #ff9433; --go: #3dd07f; --wait: #f2c63a;
+  --consult: #70a8ec; --floor: #161c24; --counter: #252d39; --rack: #303a48; color-scheme: dark;
+   --glass: rgba(22, 28, 37, .72); --glass-strong: rgba(22, 28, 37, .92); --glass-line: rgba(255, 255, 255, .1);
+    --glass-shadow: 0 12px 40px rgba(0, 0, 0, .45), 0 1px 0 rgba(255, 255, 255, .06) inset; --tint1: rgba(111, 155, 230, .14); --tint2: rgba(229, 84, 77, .08);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+body { min-height: 100vh; }
+body {
+  background: radial-gradient(60% 55% at 12% 8%, var(--tint1), transparent 70%), radial-gradient(55% 50% at 92% 92%, var(--tint2), transparent 70%), var(--bg);
+  color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input { touch-action: manipulation; }
+
+/* ---------- Brand row (inside the coach) ---------- */
+.coach-brand { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.logo { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.logo svg { width: 34px; height: 34px; flex: none; }
+.logo b { display: block; font-family: var(--font-sign); font-weight: 900; font-style: italic; font-size: 21px; letter-spacing: .01em; line-height: 1; text-transform: uppercase; color: var(--red); }
+.logo span { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.2; margin-top: 2px; }
+.badge { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); border: 1.5px solid currentColor; border-radius: 6px; padding: 3px 7px; white-space: nowrap; }
+.coach-foot { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+@media (max-width: 999px) { .kbd-line { display: none; } }
+.coach-foot kbd { font: 600 11px/1 var(--font-body); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; background: var(--surface); color: var(--ink); }
+
+.wrap { min-height: calc(100vh - 40px); min-height: calc(100svh - 40px); display: grid; }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); justify-content: center; gap: 32px; align-items: center; max-width: 1100px; margin: 0 auto; width: 100%; }
+.device { width: 100%; display: grid; justify-items: center; position: relative; }
+
+/* ---------- Phone (its own fixed visual world, same in both themes) ---------- */
+.phone {
+  --p-bg: #ffffff; --p-ink: #111418; --p-muted: #6b7178; --p-line: #e3e6ea; --p-field: #f4f6f8;
+  --p-red: #c4302b; --p-blue: #1d4f9a; --p-link: #0a7cff;
+  width: min(470px, 100%, calc((100vh - 40px) * 0.4865)); width: min(470px, 100%, calc((100svh - 40px) * 0.4865)); aspect-ratio: 360 / 740; max-width: 100%;
+  background: linear-gradient(145deg, #2b3038, #0b0d0f 40%); border-radius: 50px; padding: 11px; position: relative;
+  box-shadow: inset 0 0 0 1.5px #3a4049, 0 1px 0 1px #050607, 0 34px 60px -24px rgba(10, 20, 40, .5);
+}
+.phone.buzz { animation: buzz .42s ease; }
+@keyframes buzz { 0%, 100% { transform: none; } 20% { transform: translateX(-3px) rotate(-.6deg); } 40% { transform: translateX(3px) rotate(.6deg); } 60% { transform: translateX(-2px); } 80% { transform: translateX(2px); } }
+.screen { position: relative; width: 100%; height: 100%; border-radius: 40px; overflow: hidden; background: var(--p-bg); color: var(--p-ink);
+  /* the phone is its own light world in both themes */
+  --ink: #111418; --muted: #5f6672; --line: #e1e5ea; --surface: #ffffff; --sunken: #f3f5f8; --floor: #f5f6f8; --counter: #e2e6eb; --rack: #cdd3db;
+  --red: #c4302b; --blue: #1d4f9a; --blue-ink: #ffffff; --cue: #ff7a00; --go: #1d9a52; --wait: #d9a400; --consult: #2e6db3;
+  font-family: -apple-system, "SF Pro Text", "Segoe UI", Roboto, sans-serif; font-size: 15px; line-height: 1.35; isolation: isolate;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+.screen input { -webkit-user-select: text; user-select: text; }
+.island { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 98px; height: 28px; background: #000; border-radius: 20px; z-index: 60; }
+.statusbar { position: absolute; top: 0; left: 0; right: 0; height: 46px; display: flex; justify-content: space-between; align-items: center; padding: 6px 30px 0; font-weight: 600; font-size: 14px; z-index: 55; pointer-events: none; color: var(--p-ink); font-variant-numeric: tabular-nums; }
+.statusbar.light { color: #fff; }
+.statusbar.solid { background: var(--p-bg); box-shadow: 0 1px 0 var(--p-line); }
+.statusbar .icons { display: flex; gap: 5px; align-items: center; }
+.statusbar .icons i { display: block; width: 22px; height: 11px; border: 1.5px solid currentColor; border-radius: 3.5px; position: relative; opacity: .9; }
+.statusbar .icons i::after { content: ""; position: absolute; inset: 1.5px 5px 1.5px 1.5px; background: currentColor; border-radius: 1px; }
+.statusbar .icons b { display: block; width: 16px; height: 10px; background: currentColor; clip-path: polygon(0 100%, 100% 0, 100% 100%); }
+
+.scr { position: absolute; inset: 0; display: flex; flex-direction: column; opacity: 0; visibility: hidden; transform: translateX(26px); transition: opacity .3s ease, transform .3s cubic-bezier(.2, .8, .2, 1), visibility 0s .3s; }
+.scr.active { opacity: 1; visibility: visible; transform: none; transition: opacity .3s ease, transform .3s cubic-bezier(.2, .8, .2, 1); }
+.scr.active .page > * { animation: fadein .4s ease both; }
+.scr.active .page > :nth-child(2) { animation-delay: .04s; } .scr.active .page > :nth-child(3) { animation-delay: .08s; }
+.scr.active .page > :nth-child(4) { animation-delay: .12s; } .scr.active .page > :nth-child(5) { animation-delay: .16s; }
+.scr.active .page > :nth-child(6) { animation-delay: .2s; } .scr.active .page > :nth-child(n+7) { animation-delay: .24s; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+/* Lock screen */
+.lock { background: radial-gradient(120% 80% at 20% 10%, #3d6fb0 0%, #1e3a6a 45%, #111a2e 100%); color: #fff; align-items: center; padding: 62px 12px calc(10px + var(--inset-b)); }
+.lock .date { font-size: 16px; font-weight: 500; opacity: .9; }
+.lock .clock { font-size: 72px; font-size: clamp(56px, 22cqw, 80px); font-weight: 700; letter-spacing: -2px; line-height: 1; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.screen { container-type: inline-size; }
+.notif, .banner { width: 100%; text-align: left; border: 0; cursor: pointer; font: inherit; color: #111;
+  background: rgba(246, 247, 249, .92); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-radius: 20px; padding: 11px 13px; display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 2px 10px; align-items: start; }
+.notif { margin: auto 0; transition: transform .55s cubic-bezier(.2, .9, .3, 1.2), opacity .3s ease; }
+.notif.pending { opacity: 0; transform: translateY(-34px) scale(.94); }
+.app { grid-row: span 2; width: 38px; height: 38px; border-radius: 9px; background: linear-gradient(#5df27a, #20c43c); display: grid; place-items: center; }
+.app svg { width: 24px; height: 24px; }
+.nhead { display: flex; justify-content: space-between; align-items: baseline; font-weight: 600; font-size: 14px; gap: 6px; min-width: 0; }
+.nhead span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nhead span:last-child { font-weight: 400; color: #666; font-size: 12.5px; flex: none; }
+.ntxt { font-size: 14px; color: #222; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.homebar { width: 120px; height: 5px; border-radius: 3px; background: #fff; opacity: .85; flex: none; margin-top: 8px; }
+.banner { position: absolute; top: 48px; left: 8px; right: 8px; width: auto; z-index: 50; box-shadow: 0 12px 30px rgba(0,0,0,.22); transform: translateY(-170%); transition: transform .5s cubic-bezier(.2, .9, .3, 1.15); }
+.banner.show { transform: none; }
+
+/* Messages */
+.msgs-top { padding: 50px 14px 10px; display: grid; justify-items: center; gap: 4px; border-bottom: 1px solid var(--p-line); background: #f7f7f8; position: relative; flex: none; }
+.msgs-top .back { position: absolute; left: 16px; top: 58px; color: var(--p-link); font-size: 28px; line-height: 1; }
+.avatar { width: 46px; height: 46px; border-radius: 50%; background: var(--p-red); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 15px; letter-spacing: .02em; }
+.msgs-top .who { font-size: 12px; }
+.thread { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 6px; overflow: auto; -webkit-overflow-scrolling: touch; }
+.stamp { text-align: center; font-size: 11px; color: var(--p-muted); margin: 4px 0; }
+.bubble { align-self: flex-start; max-width: 84%; background: #e9e9eb; border-radius: 18px 18px 18px 6px; padding: 9px 13px; font-size: 15px; }
+.scr.active .bubble { animation: pop .35s cubic-bezier(.2, .9, .3, 1.2) both; }
+.bubble a { color: var(--p-link); text-decoration: underline; word-break: break-all; display: inline-block; }
+@keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.96); } to { opacity: 1; transform: none; } }
+.typing { align-self: flex-start; background: #e9e9eb; border-radius: 18px; padding: 12px 14px; display: flex; gap: 4px; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: #8e8e93; animation: dot 1s infinite ease-in-out; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes dot { 0%, 60%, 100% { transform: none; opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+.compose { padding: 8px 12px calc(22px + var(--inset-b)); flex: none; }
+.compose span { display: block; border: 1px solid var(--p-line); border-radius: 18px; padding: 7px 12px; color: #aaa; font-size: 14px; }
+
+/* Store website */
+.urlbar { padding: 50px 12px 8px; background: #f2f3f5; border-bottom: 1px solid var(--p-line); flex: none; position: relative; }
+.urlbar div { background: #e3e5e9; border-radius: 10px; padding: 7px 10px; font-size: 13px; display: flex; gap: 6px; align-items: center; justify-content: center; color: #333; }
+.urlbar svg { width: 11px; height: 11px; }
+.urlbar::after { content: ""; position: absolute; left: 0; bottom: -1px; height: 2px; width: 100%; background: var(--p-link); transform-origin: left; transform: scaleX(0); opacity: 0; }
+.scr.active .urlbar::after { animation: load .7s ease forwards; }
+@keyframes load { 0% { transform: scaleX(0); opacity: 1; } 80% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+.site-head { display: flex; align-items: center; gap: 8px; padding: 9px 14px; background: var(--p-red); color: #fff; flex: none; }
+.site-head svg { width: 24px; height: 24px; }
+.site-head b { font-family: var(--font-sign); font-weight: 900; font-style: italic; font-size: 18px; letter-spacing: .01em; text-transform: uppercase; line-height: 1; }
+.site-head small { margin-left: auto; font-family: var(--font-sign); font-weight: 600; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+.page { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 14px 16px calc(20px + var(--inset-b)); display: flex; flex-direction: column; gap: 11px; position: relative; }
+.page h2 { margin: 0; font-size: 20px; line-height: 1.2; }
+.page .sub { margin: -4px 0 0; color: var(--p-muted); font-size: 13.5px; }
+.field { display: grid; gap: 4px; }
+.field label { font-size: 13px; font-weight: 600; }
+.field input { font: inherit; font-size: 16px; padding: 11px 12px; border: 1.5px solid #cfd4da; border-radius: 10px; background: var(--p-field); color: var(--p-ink); width: 100%; -webkit-appearance: none; appearance: none; }
+.field input:focus { outline: none; border-color: var(--p-blue); background: #fff; }
+.err { color: #c0392b; font-size: 13px; min-height: 18px; margin: -4px 0 -2px; }
+.pbtn { font: inherit; font-weight: 700; font-size: 16px; border: 0; border-radius: 12px; padding: 14px; background: var(--p-blue); color: #fff; cursor: pointer; width: 100%; flex: none; transition: transform .12s, background .2s; }
+.pbtn:active { transform: scale(.98); }
+.pbtn:disabled { background: #aab4c3; cursor: default; }
+.pbtn:focus-visible, .rx:focus-visible, .method:focus-visible, .q button:focus-visible { outline: 3px solid var(--p-link); outline-offset: 2px; }
+.fine { font-size: 11.5px; color: var(--p-muted); text-align: center; margin: 0; }
+.member { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: #eef2f8; border-radius: 10px; padding: 8px 10px; font-size: 12.5px; color: #33415a; }
+.member b { font-family: var(--font-sign); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--p-blue); }
+.rx { font: inherit; color: inherit; text-align: left; background: #fff; border: 1.5px solid var(--p-line); border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; cursor: pointer; transition: border-color .2s, background .2s, opacity .2s; }
+.rx .box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #b9c0c9; display: grid; place-items: center; grid-row: span 2; transition: background .2s, border-color .2s; }
+.rx .box svg { width: 13px; height: 13px; opacity: 0; transform: scale(.4); transition: .2s; }
+.rx[aria-pressed="true"] { border-color: var(--p-blue); background: #f3f7fd; }
+.rx[aria-pressed="true"] .box { background: var(--p-blue); border-color: var(--p-blue); }
+.rx[aria-pressed="true"] .box svg { opacity: 1; transform: none; }
+.rx[aria-pressed="false"] { opacity: .6; }
+.rx b { font-size: 15px; }
+.tag { font-weight: 800; font-variant-numeric: tabular-nums; background: #fff6d6; border: 1px solid #e8d48a; color: #3a2e00; padding: 1px 7px; border-radius: 4px; font-size: 14px; grid-row: span 2; }
+.rx small { color: var(--p-muted); font-size: 12.5px; grid-column: 2; }
+.total { display: flex; justify-content: space-between; font-weight: 700; font-size: 17px; border-top: 1px dashed #c9cfd6; padding-top: 10px; font-variant-numeric: tabular-nums; }
+.methods { display: grid; gap: 8px; border-radius: 12px; }
+.method { font: inherit; color: inherit; text-align: left; background: #fff; border: 1.5px solid var(--p-line); border-radius: 12px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; font-size: 14.5px; cursor: pointer; width: 100%; }
+.method > span:nth-child(2) { min-width: 0; }
+.method .chip { width: 40px; height: 26px; border-radius: 5px; color: #fff; font-size: 9px; font-weight: 800; display: grid; place-items: center; letter-spacing: .04em; flex: none; }
+.method small { display: block; color: var(--p-muted); font-size: 12px; }
+.method .dot { margin-left: auto; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #b9c0c9; flex: none; transition: border .2s; }
+.method[aria-pressed="true"] { border-color: var(--p-blue); background: #f3f7fd; }
+.method[aria-pressed="true"] .dot { border: 6px solid var(--p-blue); }
+.method.fixed { cursor: default; }
+.label-sm { font-size: 12px; font-weight: 700; margin: 2px 0 -5px; color: var(--p-muted); text-transform: uppercase; letter-spacing: .06em; }
+.q { background: #f3f5f8; border-radius: 12px; padding: 11px; display: grid; gap: 8px; }
+.q p { margin: 0; font-size: 14px; font-weight: 600; }
+.q .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.q button { font: inherit; font-size: 14.5px; font-weight: 600; padding: 10px; border-radius: 10px; border: 1.5px solid #c7ced8; background: #fff; color: var(--p-ink); cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+.q button[aria-pressed="true"] { border-color: var(--p-blue); background: var(--p-blue); color: #fff; }
+.center { flex: 1; display: grid; place-items: center; align-content: center; gap: 14px; text-align: center; padding: 20px 20px calc(20px + var(--inset-b)); }
+.spinner { width: 44px; height: 44px; border-radius: 50%; border: 4px solid #dbe2ec; border-top-color: var(--p-blue); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.okmark { width: 64px; height: 64px; border-radius: 50%; background: #1d9a52; display: grid; place-items: center; margin: 4px auto 0; box-shadow: 0 0 0 8px #e3f5ea; }
+.okmark svg { width: 34px; height: 34px; }
+.okmark path { stroke-dasharray: 30; stroke-dashoffset: 0; }
+.scr.active .okmark { animation: bounce .5s cubic-bezier(.2, .9, .3, 1.4) both; }
+.scr.active .okmark path { animation: draw .45s .25s ease both; }
+@keyframes bounce { from { transform: scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes draw { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
+.receipt { border: 1px solid var(--p-line); border-radius: 12px; padding: 11px 12px; display: grid; gap: 6px; font-size: 14px; }
+.receipt div { display: flex; justify-content: space-between; gap: 8px; }
+.receipt span { color: var(--p-muted); }
+.receipt b { font-variant-numeric: tabular-nums; text-align: right; }
+.texted { display: flex; gap: 10px; align-items: center; background: #eef2f8; border-radius: 12px; padding: 11px 12px; font-size: 14px; color: #22314a; }
+.texted svg { width: 26px; height: 26px; flex: none; }
+.laneflag { border-radius: 12px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; font-weight: 700; font-size: 15px; color: #10261f; }
+.laneflag i { width: 12px; height: 38px; border-radius: 4px; flex: none; }
+.laneflag small { display: block; font-weight: 400; font-size: 12.5px; color: #3b4a46; }
+.pass-head { text-align: center; display: grid; gap: 2px; }
+.pass-head b { font-family: var(--font-sign); font-weight: 800; font-size: 22px; letter-spacing: .02em; text-transform: uppercase; color: var(--p-red); }
+.qrbox { width: min(200px, 70%); margin: 0 auto; padding: 10px; background: #fff; border: 2px solid #111; border-radius: 14px; }
+.qrbox svg { display: block; width: 100%; height: auto; }
+
+/* Cue ring, label, simulated finger, tap ripple */
+.cue { position: absolute; z-index: 70; pointer-events: none; border: 3px solid var(--cue); border-radius: 14px; animation: pulse 1.4s ease-out infinite;
+  transition: left .18s ease, top .18s ease, width .18s ease, height .18s ease; }
+.cue-tag { position: absolute; left: 50%; transform: translateX(calc(-50% + var(--shift, 0px))); white-space: nowrap; background: var(--cue); color: #fff; font: 700 12.5px/1 var(--font-body); padding: 7px 11px; border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,.22); }
+.cue-tag::after { content: ""; position: absolute; left: calc(50% - var(--shift, 0px)); margin-left: -6px; border: 6px solid transparent; }
+.cue-tag.below { top: calc(100% - 13px); }
+.cue-tag.above { bottom: calc(100% - 13px); }
+.cue-tag.below.out { top: calc(100% + 6px); }
+.cue-tag::after { display: none; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 122, 0, .5); } 100% { box-shadow: 0 0 0 14px rgba(255, 122, 0, 0); } }
+.finger { position: absolute; z-index: 80; left: 50%; top: 85%; width: 42px; height: 42px; margin: -21px 0 0 -21px; border-radius: 50%; background: rgba(30, 30, 30, .26); border: 2.5px solid rgba(255, 255, 255, .95);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .28); pointer-events: none; opacity: 0;
+  transition: left calc(.42s * var(--k)) cubic-bezier(.4, .1, .2, 1), top calc(.42s * var(--k)) cubic-bezier(.4, .1, .2, 1), opacity .25s, transform .14s; }
+.finger.on { opacity: 1; }
+.finger.tap { transform: scale(.72); }
+.ripple { position: absolute; z-index: 78; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: rgba(255, 122, 0, .45); pointer-events: none; animation: ripple .55s ease-out forwards; }
+@keyframes ripple { from { transform: scale(.4); opacity: 1; } to { transform: scale(4.2); opacity: 0; } }
+
+/* ---------- Panels shown in place of the phone ---------- */
+@keyframes panelin { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+.panel-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.panel-h b { font-size: 15px; }
+.panel-h span { font-size: 12.5px; color: var(--muted); }
+svg.plan { width: 100%; height: auto; display: block; }
+.lane { transition: opacity .4s; }
+.lane.dim { opacity: .3; }
+.lane.dest .lane-bg { animation: glow 1.6s ease-in-out infinite alternate; }
+@keyframes glow { from { opacity: .16; } to { opacity: .42; } }
+.sign-t { font-family: var(--font-sign); font-weight: 800; letter-spacing: .01em; }
+.plan .sign-t { font-size: 21px; }
+.plan text:not(.sign-t) { font-size: 17px; }
+.apppage { padding-top: 54px; gap: 12px; }
+#mapPage { justify-content: center; }
+.scan-scr, .aisle-scr { background: #e9edf2; }
+#aisle3d { position: absolute; left: 0; right: 0; top: 112px; bottom: calc(var(--inset-b) + 112px); width: 100%; height: calc(100% - 112px - var(--inset-b) - 112px); display: block; }
+.aisle-scr .map-callout { position: absolute; z-index: 5; top: 52px; left: 12px; right: 12px; font-size: 17px; padding: 10px 12px; box-shadow: 0 8px 22px rgba(10, 40, 20, .22); }
+.aisle-scr .map-callout small { font-size: 13.5px; }
+.aisle-stats { position: absolute; z-index: 5; left: 12px; right: 12px; bottom: calc(var(--inset-b) + 10px); display: grid; gap: 6px; padding: 10px 12px; border-radius: 16px;
+  background: rgba(255, 255, 255, .86); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 8px 26px rgba(10, 20, 40, .16); }
+.aisle-stats div { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 14.5px; color: #111418; }
+.aisle-stats i { width: 12px; height: 12px; border-radius: 3px; align-self: start; margin-top: 4px; }
+.aisle-stats span { font-weight: 700; line-height: 1.25; }
+.aisle-stats small { display: block; font-weight: 400; font-size: 12.5px; color: #5f6672; }
+.aisle-stats b { font-variant-numeric: tabular-nums; transition: color .3s; }
+.aisle-stats b.bump { color: #1d9a52; }
+.map2d { padding-top: 120px !important; }
+#scan3d { position: absolute; left: 0; right: 0; top: 40px; bottom: calc(var(--inset-b) + 118px); width: 100%; height: calc(100% - 40px - var(--inset-b) - 118px); display: block; }
+.scan-cap { position: absolute; z-index: 5; top: 54px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; white-space: nowrap;
+  padding: 8px 14px; border-radius: 999px; font: 700 15px/1.2 var(--font-body); color: #111418;
+  background: rgba(255, 255, 255, .8); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 6px 20px rgba(10, 20, 40, .15); transition: background .3s; }
+.scan-cap i { width: 10px; height: 10px; border-radius: 50%; background: var(--wait); flex: none; transition: background .3s; }
+.scan-cap.scan i { background: #ff2d2d; animation: blink .5s infinite alternate; }
+.scan-cap.ok i { background: var(--go); }
+@keyframes blink { to { opacity: .3; } }
+.scan2d { position: absolute; inset: 0; display: grid; align-content: center; padding: 90px 14px 0; }
+.scan-list { position: absolute; z-index: 5; left: 12px; right: 12px; bottom: calc(var(--inset-b) + 10px); display: grid; gap: 6px; padding: 10px 12px;
+  border-radius: 18px; background: rgba(255, 255, 255, .84); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 8px 26px rgba(10, 20, 40, .16); }
+.scan-list .checks { gap: 6px; }
+.scan-list .checks li { font-size: 14.5px; grid-template-columns: 22px minmax(0, 1fr); }
+.scan-list .checks li i { width: 22px; height: 22px; }
+.scan-list .skips { display: none; }
+.map-callout { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; font-weight: 700; font-size: 19px; line-height: 1.2; color: #fff; }
+.map-callout i { width: 14px; height: 14px; border-radius: 50%; background: #fff; flex: none; box-shadow: 0 0 0 4px rgba(255, 255, 255, .35); }
+.map-callout small { display: block; font-weight: 400; font-size: 14px; opacity: .92; margin-top: 2px; }
+.dest-ring { transform-box: fill-box; transform-origin: center; animation: ring 1.4s ease-out infinite; }
+@keyframes ring { from { transform: scale(.6); opacity: .9; } to { transform: scale(1.8); opacity: 0; } }
+
+/* Scan */
+.scanstage { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 6px 4px; min-height: 220px; }
+.mini { position: relative; width: 150px; background: linear-gradient(145deg, #2b3038, #0b0d0f 40%); border-radius: 26px; padding: 7px; box-shadow: 0 16px 30px -12px rgba(0,0,0,.4); }
+.mini-in { background: #fff; border-radius: 20px; padding: 20px 12px 14px; display: grid; gap: 6px; justify-items: center; color: #111; position: relative; overflow: hidden; }
+.mini-in b { font-family: var(--font-sign); font-weight: 800; color: #c4302b; letter-spacing: .06em; font-size: 14px; text-transform: uppercase; }
+.mini-in .qrbox { width: 100%; border-width: 1.5px; padding: 6px; border-radius: 8px; }
+.mini-in small { font-size: 11px; color: #555; }
+.laser { position: absolute; left: 6px; right: 6px; height: 3px; top: 34px; background: #ff2d2d; box-shadow: 0 0 10px 3px rgba(255, 45, 45, .7); border-radius: 2px; opacity: 0; }
+.scanning .laser { animation: sweep calc(.7s * var(--k)) ease-in-out 2 alternate; }
+@keyframes sweep { 0% { top: 34px; opacity: 1; } 100% { top: 150px; opacity: 1; } }
+.verified { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(29, 154, 82, .14); opacity: 0; transition: opacity .25s; }
+.verified i { width: 58px; height: 58px; border-radius: 50%; background: #1d9a52; display: grid; place-items: center; transform: scale(.3); transition: transform .45s cubic-bezier(.2, .9, .3, 1.5); box-shadow: 0 6px 18px rgba(29, 154, 82, .45); }
+.verified svg { width: 30px; height: 30px; }
+.ok .verified { opacity: 1; }
+.ok .verified i { transform: none; }
+.gun { width: 100%; max-width: 220px; height: auto; justify-self: start; transform: translateX(34px) rotate(8deg); opacity: 0; transition: transform .6s cubic-bezier(.2, .9, .3, 1), opacity .4s; }
+.aimed .gun { transform: none; opacity: 1; }
+.beam { opacity: 0; transition: opacity .2s; }
+.scanning .beam { opacity: .28; }
+.beep { position: absolute; left: 172px; top: 8px; font: 800 13px/1 var(--font-sign); letter-spacing: .12em; color: var(--go); opacity: 0; transform: translateY(6px); transition: .3s; }
+.ok .beep { opacity: 1; transform: none; }
+.bag { position: absolute; right: 2px; bottom: -4px; width: 104px; height: auto; opacity: 0; transform: translateY(30px) scale(.8); transition: transform .6s cubic-bezier(.2, .9, .3, 1.3), opacity .4s; }
+.handed .bag { opacity: 1; transform: none; }
+.handed .gun { opacity: .2; }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.checks li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: center; font-size: 15px; color: var(--muted); transition: color .3s; }
+.checks li i { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; transition: background .3s, border-color .3s; }
+.checks li i svg { width: 14px; height: 14px; opacity: 0; transform: scale(.3); transition: .3s; }
+.checks li.on { color: var(--ink); }
+.checks li.on i { background: var(--go); border-color: var(--go); }
+.checks li.on i svg { opacity: 1; transform: none; }
+.skips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); opacity: 0; transform: translateY(6px); transition: .4s; }
+.skips.on { opacity: 1; transform: none; }
+.skips span { border: 1px dashed var(--line); border-radius: 999px; padding: 3px 10px; text-decoration: line-through; text-decoration-color: var(--red); text-decoration-thickness: 2px; color: var(--ink); }
+
+/* Benefits */
+.ben-head { display: grid; gap: 4px; }
+.ben-head .eb { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.ben-head h3 { margin: 0; font-size: 24px; line-height: 1.1; text-wrap: balance; }
+.race { display: grid; gap: 12px; background: var(--sunken); border-radius: 14px; padding: 12px; }
+.lane-row { display: grid; gap: 6px; }
+.lane-row .lbl { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; }
+.lane-row .lbl i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+.lane-row .state { font-size: 12.5px; font-weight: 700; color: var(--muted); transition: color .3s; white-space: nowrap; }
+.lane-row.done .state { color: var(--go); }
+.bar { position: relative; height: 30px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; display: flex; }
+.bar .seg { flex: 1; display: grid; place-items: center; font-size: 11.5px; font-weight: 700; color: var(--muted); border-right: 1px dashed var(--line); position: relative; z-index: 1; white-space: nowrap; overflow: hidden; }
+.bar .seg:last-child { border-right: 0; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; width: 0; z-index: 0; }
+.race.run .bar .fill { transition: width linear; }
+.lane-row.slow .fill { background: color-mix(in srgb, var(--wait) 45%, transparent); background: rgba(217, 164, 0, .38); }
+.lane-row.fast .fill { background: rgba(29, 154, 82, .32); }
+.lane-row.fast .seg { color: var(--ink); }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tile { border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 4px; align-content: start; opacity: 0; transform: translateY(14px) scale(.97); transition: opacity .45s ease, transform .55s cubic-bezier(.2, .9, .3, 1.2); background: var(--surface); }
+.tile.on { opacity: 1; transform: none; }
+.tile svg { width: 26px; height: 26px; }
+.tile b { font-size: 14px; line-height: 1.2; }
+.tile span { font-size: 12.5px; color: var(--muted); line-height: 1.3; }
+.cta { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--blue); color: var(--blue-ink); opacity: 0; transform: translateY(10px); transition: opacity .5s, transform .6s cubic-bezier(.2, .9, .3, 1.2); }
+.cta.on { opacity: 1; transform: none; }
+.cta svg { width: 34px; height: 34px; flex: none; }
+.cta b { display: block; font-size: 16px; }
+.cta span { font-size: 13.5px; opacity: .92; }
+.cta .arrow { margin-left: auto; width: 22px; height: 22px; animation: nudge 1.2s ease-in-out infinite; }
+@keyframes nudge { 0%, 100% { transform: none; } 50% { transform: translateX(5px); } }
+
+/* ---------- Coach (presenter panel) ---------- */
+.coach { background: var(--glass); -webkit-backdrop-filter: blur(22px) saturate(1.6); backdrop-filter: blur(22px) saturate(1.6);
+  border: 1px solid var(--glass-line); border-radius: 22px; padding: 16px; box-shadow: var(--glass-shadow); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .coach { background: var(--glass-strong); } }
+.coach-in { display: grid; gap: 12px; }
+.phases { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.phases li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 7px; align-items: center; padding: 6px 7px; border-radius: 10px; background: rgba(127, 137, 153, .12); color: var(--muted); font-size: 12px; line-height: 1.2; transition: background .3s, color .3s; }
+.phases li b { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--line); color: var(--ink); font-size: 13px; transition: background .3s, color .3s; }
+.phases li .short { display: none; }
+.phases li.now { background: var(--blue); color: var(--blue-ink); font-weight: 700; }
+.phases li.now b { background: var(--surface); color: var(--blue); }
+.phases li.done b { background: var(--go); color: #fff; }
+.meter { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: -6px; }
+.meter i { display: block; height: 100%; width: 0; background: var(--cue); transition: width .5s ease; }
+.swap { display: grid; gap: 10px; }
+.swap.in { animation: swapin .35s ease both; }
+@keyframes swapin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.stepno { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums; }
+.coach h2 { font-weight: 700; font-size: 22px; line-height: 1.15; margin: -4px 0 0; letter-spacing: -.01em; text-wrap: balance; }
+.box { border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; }
+.box .k { font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.box p { margin: 0; }
+.box.what { background: rgba(127, 137, 153, .1); }
+.box.what .k { color: var(--muted); }
+.box.what p { font-size: 15px; line-height: 1.4; }
+.box.next { border: 1.5px solid var(--cue); background: transparent; grid-template-columns: 22px minmax(0, 1fr); column-gap: 10px; align-items: start; }
+.box.next svg { width: 22px; height: 22px; grid-row: span 2; margin-top: 2px; }
+.box.next .k { color: var(--cue); }
+.box.next p { font-size: 16px; font-weight: 700; line-height: 1.35; }
+.extra { display: grid; gap: 10px; }
+.extra:empty { display: none; }
+.note { font-size: 13.5px; color: var(--muted); margin: 0; }
+.dest-chip { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 2px solid currentColor; font-weight: 700; font-size: 16px; }
+.dest-chip i { width: 14px; height: 38px; border-radius: 4px; background: currentColor; flex: none; }
+.dest-chip span { color: var(--ink); }
+.dest-chip small { display: block; font-weight: 400; font-size: 13px; color: var(--muted); }
+.recap { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; counter-reset: r; }
+.recap li { counter-increment: r; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: center; font-size: 15px; }
+.recap li::before { content: counter(r); width: 26px; height: 26px; border-radius: 50%; background: var(--blue); color: var(--blue-ink); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: inherit; font-weight: 700; font-size: 14px; border-radius: 11px; padding: 9px 12px; cursor: pointer; border: 1.5px solid var(--line); background: var(--glass-strong); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: border-color .2s, transform .1s; }
+.btn:hover { border-color: var(--blue); }
+.btn:active { transform: scale(.97); }
+.btn:focus-visible { outline: 3px solid var(--cue); outline-offset: 2px; }
+.btn.primary { background: var(--blue); border-color: var(--blue); color: var(--blue-ink); }
+.btn.play { background: var(--red); border-color: var(--red); color: #fff; }
+.btn:disabled { opacity: .4; cursor: default; transform: none; }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.btn.grow { flex: 1 1 auto; }
+.speed { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; font-size: 13.5px; color: var(--muted); }
+.speed label { font-weight: 700; }
+.speed output { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; min-width: 4.6em; text-align: right; }
+.speed input { width: 100%; accent-color: var(--red); height: 28px; margin: 0; }
+.divider { height: 1px; background: var(--line); }
+
+/* ---------- Tablets and phones: glass dock floats over the bottom of the screen ---------- */
+@media (max-width: 999px) {
+  body { padding-block: 12px; }
+  .wrap { min-height: 0; }
+  .stage { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .phone { height: calc(100vh - 24px); height: calc(100svh - 24px); width: auto; aspect-ratio: 360 / 740; max-width: 100%; }
+  .controls.desk-only { display: none; }
+  .coach { position: fixed; z-index: 100; left: 0; right: 0; margin: 0 auto; width: min(600px, calc(100% - 20px));
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px)); padding: 10px 12px; border-radius: 22px;
+    max-height: 78vh; max-height: 78svh; overflow: auto; -webkit-overflow-scrolling: touch; transition: box-shadow .3s; }
+  .coach.open { box-shadow: 0 24px 70px rgba(10, 20, 40, .4); background: var(--glass-strong); }
+  .coach-in { gap: 8px; }
+  .coach:not(.open) .coach-brand, .coach:not(.open) .phases, .coach:not(.open) #cExtra, .coach:not(.open) .speed, .coach:not(.open) .coach-foot { display: none; }
+  .stepno, .divider, .note, .coach h2 { display: none; }
+  .meter { margin: 0; height: 3px; }
+  .swap { gap: 6px; }
+  .coach:not(.open) .box.what { background: none; padding: 0 2px; }
+  .coach:not(.open) .box.what .k { display: none; }
+  .coach:not(.open) .box.what p { font-size: 14.5px; line-height: 1.35; color: var(--ink); opacity: .82; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.7em; }
+  .box { padding: 8px 10px; }
+  .box .k { font-size: 10.5px; }
+  .box.what p { font-size: 14.5px; line-height: 1.35; }
+  .box.next { border: 0; padding: 0 2px; background: none; display: block; }
+  .box.next svg { display: none; }
+  .box.next p { font-size: 16.5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
+  .phases li { grid-template-columns: 20px minmax(0, 1fr); padding: 5px 7px; font-size: 12.5px; gap: 6px; }
+  .phases li b { width: 20px; height: 20px; font-size: 11.5px; }
+  .phases li .full { display: none; }
+  .phases li .short { display: inline; }
+  .btn { padding: 0 10px; height: 42px; font-size: 14.5px; border-radius: 12px; }
+  .controls { flex-wrap: nowrap; gap: 6px; }
+  .speed { gap: 10px; font-size: 13px; }
+  .speed input { height: 26px; }
+  .dest-chip { font-size: 14px; padding: 7px 10px; }
+  .dest-chip i { height: 28px; }
+  .recap li { font-size: 14px; grid-template-columns: 22px minmax(0, 1fr); }
+  .recap li::before { width: 22px; height: 22px; font-size: 12px; }
+  .scanstage { min-height: 180px; }
+  .mini { width: 124px; }
+  .beep { left: 140px; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ben-head h3 { font-size: 22px; }
+  .race { padding: 10px; gap: 8px; }
+  .tile { padding: 8px; }
+  .tile b { font-size: 13.5px; }
+  .tile span { font-size: 12px; }
+}
+@media (min-width: 1000px) {
+  .controls.mobile-only { display: none; }
+}
+
+/* ---------- Phones: the demo phone fills the display, bezel and all ---------- */
+@media (max-width: 600px) {
+  body { padding: 0; background: #0d1117; }
+  .phone { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 6px); bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+    left: max(6px, env(safe-area-inset-left, 0px)); right: max(6px, env(safe-area-inset-right, 0px));
+    width: auto; height: auto; aspect-ratio: auto; border-radius: 46px; padding: 7px; }
+  .screen { border-radius: 39px; }
+  .phone.buzz { animation: none; }
+  .coach { width: calc(100% - 36px); bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); }
+}
+@media (max-width: 999px) and (max-height: 760px) {
+  .tile span { display: none; }
+  .tile { grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 8px; }
+  .tile svg { width: 22px; height: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scr, .scr.active, .cue, .finger, .banner, .notif, .gun, .bag, .skips, .checks li i svg, .tile, .cta, .verified i { transition: none; }
+  .cue, .lane.dest .lane-bg, .spinner, .bubble, .okmark, .okmark path, .scanning .laser, .swap.in, .typing i, .dest-ring, .cta .arrow, .phone.buzz, .scr.active .page > *, .ripple { animation: none !important; }
+}
+/* ---------- Costco mode: red and blue, warehouse wording (a look-alike demo skin, not official branding) ---------- */
+:root[data-brand="costco"] { --red: #e31837; --blue: #005dab; --tint1: rgba(0, 93, 171, .14); --tint2: rgba(227, 24, 55, .10); }
+@media (prefers-color-scheme: dark) { :root[data-brand="costco"]:not([data-theme="light"]) { --red: #ff4d63; --blue: #5aa7ee; --blue-ink: #04162b; } }
+:root[data-brand="costco"][data-theme="dark"] { --red: #ff4d63; --blue: #5aa7ee; --blue-ink: #04162b; }
+:root[data-brand="costco"] .phone { --p-red: #e31837; --p-blue: #005dab; }
+:root[data-brand="costco"] .screen { --red: #e31837; --blue: #005dab; }
+:root[data-brand="costco"] .logo b, :root[data-brand="costco"] .site-head b { letter-spacing: .04em; }
+:root[data-brand="costco"] .site-head { background: #fff; border-bottom: 1px solid #e1e5ea; box-shadow: 0 2px 0 #e31837; padding: 8px 14px; }
+:root[data-brand="costco"] .site-head b, :root[data-brand="costco"] .site-head small, :root[data-brand="costco"] .logo b { display: none; }
+.costco-logo { display: block; height: 28px; width: auto; flex: none; }
+.logo .costco-logo { height: 24px; }
+.brandwrap { flex: none; flex-direction: column; align-items: flex-end; }
+.coach-brand .logo > div { min-width: 0; }
+.unofficial { position: absolute; left: 0; right: 0; bottom: 16px; text-align: center; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: rgba(255, 255, 255, .55); pointer-events: none; z-index: 5; }
+.brandbtn { font: inherit; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; white-space: nowrap; color: #fff; background: #e31837; border: 1.5px solid #e31837; border-radius: 6px; padding: 3px 7px; box-shadow: 0 0 0 2px #005dab inset; }
+:root[data-brand="costco"] .brandbtn { background: #fff; color: #005dab; border-color: #005dab; box-shadow: none; }
+.brandwrap { display: flex; align-items: flex-end; gap: 6px; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <main class="stage">
+    <div class="device">
+      <div class="phone" id="phone">
+        <div class="screen" id="screen">
+          <div class="island"></div>
+          <div class="statusbar" id="statusbar"><span class="clock-sm">9:41</span><span class="icons"><b></b><i></i></span></div>
+
+          <!-- Lock screen -->
+          <section class="scr lock active" data-s="lock">
+            <div class="date" id="lockDate">Friday, October 16</div>
+            <div class="clock" id="lockClock">9:41</div>
+            <button class="notif pending" id="notif" type="button">
+              <span class="app"><svg viewBox="0 0 24 24"><path d="M12 3C6.5 3 2 6.8 2 11.4c0 2.6 1.4 4.9 3.7 6.4L5 21l3.6-1.9c1 .3 2.2.5 3.4.5 5.5 0 10-3.8 10-8.2S17.5 3 12 3z" fill="#fff"/></svg></span>
+              <span class="nhead"><span class="pharm">Stockyard Pharmacy</span><span>now</span></span>
+              <span class="ntxt">Your prescriptions are ready for pickup. Tap to pay ahead and skip the line.</span>
+            </button>
+            <div class="homebar"></div>
+          </section>
+
+          <!-- Messages -->
+          <section class="scr" data-s="msgs">
+            <div class="msgs-top"><span class="back">‹</span><div class="avatar">SY</div><div class="who pharm">Stockyard Pharmacy</div></div>
+            <div class="thread" id="thread">
+              <div class="stamp">Today <span class="clock-sm">9:41</span></div>
+              <div class="bubble"><span class="pharm">Stockyard Pharmacy</span>: Your prescriptions are ready for pickup. Pay ahead and skip the line here:<br><a href="#" id="rxlink">pay.stockyardrx.example/r/8KD2Q</a></div>
+              <div class="typing" id="typing" hidden><i></i><i></i><i></i></div>
+              <div class="bubble" id="bubble2" hidden><span class="pharm">Stockyard Pharmacy</span>: Thanks, <span class="pfirst">Maria</span>. You're paid! Show this pickup code at the <span class="pdest">green Pay Ahead line</span>:<br><a href="#" id="qrlink">pay.stockyardrx.example/p/48213</a></div>
+            </div>
+            <div class="compose"><span>Text Message</span></div>
+          </section>
+
+          <!-- Verify -->
+          <section class="scr" data-s="verify">
+            <div class="urlbar"><div><svg viewBox="0 0 12 12"><rect x="2" y="5" width="8" height="6" rx="1" fill="#555"/><path d="M4 5V3.5a2 2 0 0 1 4 0V5" stroke="#555" fill="none" stroke-width="1.3"/></svg>pay.stockyardrx.example</div></div>
+            <div class="site-head"><svg viewBox="0 0 34 34"><rect x="1" y="1" width="32" height="32" rx="6" fill="#fff"/><rect x="6" y="8" width="22" height="7" rx="1" fill="#c4302b"/><rect x="6" y="17" width="10" height="7" rx="1" fill="#c4302b"/><rect x="18" y="17" width="10" height="7" rx="1" fill="#c4302b"/></svg><b>Stockyard</b><small>Pharmacy</small></div>
+            <form class="page" id="verifyForm" novalidate>
+              <h2>Verify it's you</h2>
+              <p class="sub">Enter your name and date of birth to find your order.</p>
+              <div class="field"><label for="fn">First name</label><input id="fn" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="First name"></div>
+              <div class="field"><label for="ln">Last name</label><input id="ln" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Last name"></div>
+              <div class="field"><label for="dob">Date of birth</label><input id="dob" inputmode="numeric" autocomplete="off" placeholder="MM/DD/YYYY"></div>
+              <p class="err" id="verifyErr" role="alert"></p>
+              <button class="pbtn" id="verifyBtn" type="submit">Continue</button>
+              <p class="fine">We only use this to find your order.</p>
+            </form>
+          </section>
+
+          <!-- Select prescriptions -->
+          <section class="scr" data-s="select">
+            <div class="urlbar"><div>pay.stockyardrx.example</div></div>
+            <div class="site-head"><svg viewBox="0 0 34 34"><rect x="1" y="1" width="32" height="32" rx="6" fill="#fff"/><rect x="6" y="8" width="22" height="7" rx="1" fill="#c4302b"/><rect x="6" y="17" width="10" height="7" rx="1" fill="#c4302b"/><rect x="18" y="17" width="10" height="7" rx="1" fill="#c4302b"/></svg><b>Stockyard</b><small>Pharmacy</small></div>
+            <div class="page">
+              <div class="member"><span>Welcome back, <span class="pfirst">Maria</span></span><b>Member</b></div>
+              <h2>Choose what to pick up</h2>
+              <p class="sub">Tap to add or remove a prescription.</p>
+              <div id="rxList" style="display:grid;gap:8px"></div>
+              <div class="total"><span>Total</span><span class="ptotal">$15.75</span></div>
+              <button class="pbtn" id="selectBtn" type="button">Continue</button>
+            </div>
+          </section>
+
+          <!-- Payment -->
+          <section class="scr" data-s="pay">
+            <div class="urlbar"><div>pay.stockyardrx.example</div></div>
+            <div class="page">
+              <p class="label-sm">Pickup method</p>
+              <div class="method fixed" aria-pressed="true"><span class="chip" style="background:#c4302b">PICK</span><span>Warehouse Pick-Up<small>Pharmacy counter</small></span><span class="dot"></span></div>
+              <p class="label-sm">Payment</p>
+              <div class="methods" id="methods"></div>
+              <div class="q" id="counselQ">
+                <p>Would you like to talk with a pharmacist about your prescriptions?</p>
+                <div class="opts"><button type="button" id="counselYes" aria-pressed="false">Yes</button><button type="button" id="counselNo" aria-pressed="false">No thanks</button></div>
+              </div>
+              <p class="err" id="payErr" role="alert"></p>
+              <button class="pbtn" id="payBtn" type="button">Pay <span class="ptotal">$15.75</span></button>
+              <p class="fine">Practice demo. No real payment is made.</p>
+            </div>
+          </section>
+
+          <!-- Processing -->
+          <section class="scr" data-s="processing">
+            <div class="urlbar"><div>pay.stockyardrx.example</div></div>
+            <div class="center"><div class="spinner"></div><div>Processing payment…</div></div>
+          </section>
+
+          <!-- Paid / code texted -->
+          <section class="scr" data-s="sent">
+            <div class="urlbar"><div>pay.stockyardrx.example</div></div>
+            <div class="page">
+              <div class="okmark"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <h2 style="text-align:center">You're paid, <span class="pfirst">Maria</span></h2>
+              <div class="receipt">
+                <div><span>Order</span><b>RX-48213</b></div>
+                <div><span>Prescriptions</span><b class="pcount">3</b></div>
+                <div><span>Paid with</span><b class="pmethod">Visa ending 4242</b></div>
+                <div><span>Total</span><b class="ptotal">$15.75</b></div>
+              </div>
+              <div class="texted"><svg viewBox="0 0 26 26"><rect x="3" y="3" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="15" y="3" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="15" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15h3v3h-3zM20 20h3v3h-3zM20 15h3M15 21v2" stroke="currentColor" stroke-width="2"/></svg><span>We're texting your <b>pickup QR code</b> now.</span></div>
+            </div>
+          </section>
+
+          <!-- Pickup pass -->
+          <section class="scr" data-s="pass">
+            <div class="urlbar"><div>pay.stockyardrx.example</div></div>
+            <div class="site-head"><svg viewBox="0 0 34 34"><rect x="1" y="1" width="32" height="32" rx="6" fill="#fff"/><rect x="6" y="8" width="22" height="7" rx="1" fill="#c4302b"/><rect x="6" y="17" width="10" height="7" rx="1" fill="#c4302b"/><rect x="18" y="17" width="10" height="7" rx="1" fill="#c4302b"/></svg><b>Stockyard</b><small>Pharmacy</small></div>
+            <div class="page">
+              <div class="pass-head"><b>Pickup Pass</b><span class="pfull" style="font-weight:600">Maria Lopez</span></div>
+              <div class="qrbox" id="qrBox"></div>
+              <div class="receipt">
+                <div><span>Order</span><b>RX-48213</b></div>
+                <div><span>Status</span><b style="color:#1d9a52">Paid · <span class="ptotal">$15.75</span></b></div>
+              </div>
+              <div class="laneflag" id="laneFlag"></div>
+              <p class="fine">Turn up your screen brightness so the code scans quickly.</p>
+            </div>
+          </section>
+
+          <!-- Pickup area floor plan (inside the phone) -->
+          <section class="scr appscr aisle-scr" data-s="map"><canvas id="aisle3d" aria-label="Two pickup lines at the pharmacy: a short, fast green Pay Ahead line and a long, slow yellow regular line"></canvas><div class="map-callout" id="mapCallout"></div><div class="aisle-stats" id="aisleStats"><div><i style="background:#d9a400"></i><span>Yellow · Regular pickup<small>Left lane · pay at the counter</small></span><b id="statWait">0 helped</b></div><div><i style="background:#1d9a52"></i><span>Green · Pay Ahead<small>Right lane · already paid</small></span><b id="statGo">0 helped</b></div></div><div class="page apppage map2d" id="mapPage" hidden>
+            <div class="panel-h"><b>At the warehouse</b><span>Pharmacy pickup area</span></div>
+                <svg class="plan" viewBox="0 0 640 470" role="img" aria-labelledby="mapTitle">
+              <title id="mapTitle">Pharmacy pickup area: green Pay Ahead line and yellow regular pickup line.</title>
+              <rect x="0" y="0" width="640" height="470" rx="16" fill="var(--floor)"/>
+              <g opacity=".55" stroke="var(--line)" stroke-width="1"><path d="M0 160H640M0 300H640M160 110V470M480 110V470"/></g>
+              <rect x="210" y="6" width="220" height="30" rx="4" fill="var(--red)"/>
+              <text x="320" y="28" text-anchor="middle" class="sign-t" font-size="20" fill="#fff">PHARMACY</text>
+              <rect x="30" y="44" width="580" height="66" rx="10" fill="var(--counter)"/>
+              
+              <g class="lane" id="lane-go">
+                <rect class="lane-bg" x="252" y="110" width="136" height="236" fill="var(--go)" opacity=".16"/>
+                <line x1="252" y1="112" x2="252" y2="346" stroke="var(--go)" stroke-width="6" stroke-dasharray="14 8"/>
+                <line x1="388" y1="112" x2="388" y2="346" stroke="var(--go)" stroke-width="6" stroke-dasharray="14 8"/>
+                <rect x="252" y="54" width="136" height="46" rx="8" fill="var(--go)"/>
+                <text x="320" y="76" text-anchor="middle" class="sign-t" font-size="18" fill="#fff">GREEN LINE</text>
+                <text x="320" y="93" text-anchor="middle" font-size="12" fill="#fff" font-family="Atkinson Hyperlegible, sans-serif">Pay Ahead</text>
+                <text x="320" y="236" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Atkinson Hyperlegible, sans-serif">Already paid</text>
+                <text x="320" y="253" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Atkinson Hyperlegible, sans-serif">on your phone</text>
+              </g>
+              <g class="lane" id="lane-wait" transform="translate(-380 0)">
+                <rect class="lane-bg" x="442" y="110" width="136" height="236" fill="var(--wait)" opacity=".16"/>
+                <line x1="442" y1="112" x2="442" y2="346" stroke="var(--wait)" stroke-width="6" stroke-dasharray="14 8"/>
+                <line x1="578" y1="112" x2="578" y2="346" stroke="var(--wait)" stroke-width="6" stroke-dasharray="14 8"/>
+                <rect x="442" y="54" width="136" height="46" rx="8" fill="var(--wait)"/>
+                <text x="510" y="76" text-anchor="middle" class="sign-t" font-size="18" fill="#2a2100">YELLOW LINE</text>
+                <text x="510" y="93" text-anchor="middle" font-size="12" fill="#2a2100" font-family="Atkinson Hyperlegible, sans-serif">Regular pickup</text>
+                <text x="510" y="236" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Atkinson Hyperlegible, sans-serif">Sign and pay</text>
+                <text x="510" y="253" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Atkinson Hyperlegible, sans-serif">at the counter</text>
+              </g>
+              <g fill="var(--rack)"><rect x="20" y="392" width="200" height="28" rx="4"/><rect x="420" y="392" width="200" height="28" rx="4"/></g>
+              <text x="120" y="411" text-anchor="middle" class="sign-t" font-size="13" fill="var(--ink)">AISLE 14 · VITAMINS</text>
+              <text x="520" y="411" text-anchor="middle" class="sign-t" font-size="13" fill="var(--ink)">AISLE 15 · HEALTH</text>
+              <text x="320" y="462" text-anchor="middle" class="sign-t" font-size="13" fill="var(--muted)" letter-spacing="3">MAIN AISLE</text>
+              <path id="walkPath" d="" fill="none" stroke="none"/>
+              <path id="route" d="" fill="none" stroke="var(--cue)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>
+              <g id="destMark"><circle class="dest-ring" r="16" fill="none" stroke="var(--cue)" stroke-width="3"/><circle r="5" fill="var(--cue)"/></g>
+              <g id="walker" transform="translate(320 448)">
+                <circle r="15" fill="var(--cue)" stroke="#fff" stroke-width="3"/>
+                <text y="4.5" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Atkinson Hyperlegible, sans-serif">You</text>
+              </g>
+            </svg>
+          </div></section>
+
+          <!-- Scan at the counter (3D scene inside the phone, 2D fallback) -->
+          <section class="scr appscr scan-scr" data-s="scan">
+            <canvas id="scan3d" aria-label="A phone's pickup code is scanned at the pharmacy counter and the bag is handed over"></canvas>
+            <div class="scan-cap" id="scanCap"><i></i><span>At the counter</span></div>
+            <div class="scan2d" id="scan2d" hidden>
+              <div class="scanstage" id="scanStage">
+                <div class="mini"><div class="mini-in"><b>Pickup Pass</b><div class="qrbox" id="miniQr"></div><small class="pfull">Maria Lopez</small><div class="laser"></div><div class="verified"><i><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></i></div></div></div>
+                <svg class="gun" viewBox="0 0 230 170" aria-hidden="true">
+                  <polygon class="beam" points="6,70 70,42 70,98" fill="#ff2d2d"/>
+                  <path d="M70 34h112a24 24 0 0 1 24 24v8a24 24 0 0 1-24 24h-46l-13 64a10 10 0 0 1-10 8h-23a8 8 0 0 1-8-10l13-62H70z" fill="#2b313b"/>
+                  <rect x="64" y="40" width="12" height="60" rx="3" fill="#ff2d2d"/>
+                  <rect x="138" y="52" width="46" height="11" rx="5.5" fill="#ffd400"/>
+                </svg>
+              </div>
+            </div>
+            <div class="scan-list">
+              <ul class="checks" id="checks">
+                <li><i><svg viewBox="0 0 14 14"><path d="M3 7.3l2.6 2.6L11 4.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></i><span>Code scanned</span></li>
+                <li><i><svg viewBox="0 0 14 14"><path d="M3 7.3l2.6 2.6L11 4.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></i><span>Already paid: <b class="ptotal">$15.75</b></span></li>
+                <li><i><svg viewBox="0 0 14 14"><path d="M3 7.3l2.6 2.6L11 4.5" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg></i><span>Here is your bag: <b class="pcount">3</b> <span class="pword">prescriptions</span></span></li>
+              </ul>
+              <div class="skips" id="skips">You skipped: <span>Signing</span><span>Paying at the counter</span><span>The yellow line</span></div>
+            </div>
+          </section>
+
+          <!-- Benefits summary -->
+          <section class="scr appscr" data-s="benefits"><div class="page apppage" id="benefitsPage">
+            <div class="ben-head"><span class="eb">Why pay ahead</span><h3>Pay at home. Skip the line.</h3></div>
+            <div class="race" id="race">
+              <div class="lane-row slow" id="rowSlow">
+                <div class="lbl"><span><i style="background:var(--wait)"></i>Regular line</span><span class="state" id="slowState">In line…</span></div>
+                <div class="bar"><div class="fill"></div><span class="seg">Wait</span><span class="seg">Sign</span><span class="seg">Pay</span><span class="seg">Go</span></div>
+              </div>
+              <div class="lane-row fast" id="rowFast">
+                <div class="lbl"><span><i style="background:var(--go)"></i>Pay Ahead</span><span class="state" id="fastState">Scanning…</span></div>
+                <div class="bar"><div class="fill"></div><span class="seg">Scan</span><span class="seg">Go</span></div>
+              </div>
+            </div>
+            <div class="tiles" id="tiles">
+              <div class="tile"><svg viewBox="0 0 26 26" fill="none" stroke="var(--go)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h14M13 7l6 6-6 6"/><path d="M22 5v16"/></svg><b>Skip the line</b><span>Paid orders have their own green line.</span></div>
+              <div class="tile"><svg viewBox="0 0 26 26" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c3-6 5-6 6-2s3 4 5-1 4-5 7-2"/><path d="M4 23h18"/><path d="M5 5l16 16" stroke="var(--red)"/></svg><b>No signing</b><span>Nothing to sign at the counter.</span></div>
+              <div class="tile"><svg viewBox="0 0 26 26" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="20" height="14" rx="2.5"/><path d="M3 11h20"/><path d="M15 16h4"/></svg><b>No paying at the counter</b><span>You already paid on your phone.</span></div>
+              <div class="tile"><svg viewBox="0 0 26 26" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="18" height="18" rx="3"/><path d="M8.5 13l3 3 6-6.5"/></svg><b>Pick your prescriptions</b><span>Pay only for what you need today.</span></div>
+              <div class="tile"><svg viewBox="0 0 26 26" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2.5" width="12" height="21" rx="2.5"/><path d="M11.5 19.5h3"/></svg><b>Pay from anywhere</b><span>At home, in the car or on a break.</span></div>
+              <div class="tile"><svg viewBox="0 0 26 26" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="15" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="15" width="8" height="8" rx="1.5"/><path d="M15 15h3v3h-3zM20 20h3v3h-3z"/></svg><b>Code by text</b><span>We text you a pickup code.</span></div>
+            </div>
+            <div class="cta" id="cta">
+              <svg viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="16" height="28" rx="3"/><path d="M13 10h8M13 14h6"/><circle cx="17" cy="26" r="1.2" fill="currentColor"/></svg>
+              <div><b>Try it next time</b><span>When we text you, tap the link and pay.</span></div>
+              <svg class="arrow" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h13M12 5l6 6-6 6"/></svg>
+            </div>
+          </div></section>
+
+          <button class="banner" id="banner" type="button" tabindex="-1">
+            <span class="app"><svg viewBox="0 0 24 24"><path d="M12 3C6.5 3 2 6.8 2 11.4c0 2.6 1.4 4.9 3.7 6.4L5 21l3.6-1.9c1 .3 2.2.5 3.4.5 5.5 0 10-3.8 10-8.2S17.5 3 12 3z" fill="#fff"/></svg></span>
+            <span class="nhead"><span class="pharm">Stockyard Pharmacy</span><span>now</span></span>
+            <span class="ntxt">You're paid! Tap to see your pickup code.</span>
+          </button>
+
+          <div class="cue" id="cue" hidden><span class="cue-tag below" id="cueTag">Tap here</span></div>
+          <div class="finger" id="finger"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <aside class="coach" id="coach">
+      <div class="coach-in">
+        <div class="coach-brand">
+          <div class="logo">
+            <svg viewBox="0 0 36 36" aria-hidden="true"><rect x="0" y="0" width="36" height="36" rx="8" fill="#c4302b"/><rect x="7" y="8" width="22" height="7" rx="1.5" fill="#fff"/><rect x="7" y="17" width="10" height="7" rx="1.5" fill="#fff"/><rect x="19" y="17" width="10" height="7" rx="1.5" fill="#fff"/><rect x="6" y="26.5" width="24" height="2.5" rx="1" fill="#fff" opacity=".8"/></svg>
+            <div><b>Stockyard</b><span>Pay Ahead walkthrough</span></div>
+          </div>
+          <span class="brandwrap"><button class="brandbtn" id="brandBtn" type="button" aria-pressed="false" title="Switch between the generic pharmacy demo and the Costco demo">Costco mode</button><span class="badge">Practice demo</span></span>
+        </div>
+        <ol class="phases" id="phases">
+          <li><b>1</b><span class="full">Tap the link &amp; pay</span><span class="short">Pay</span></li>
+          <li><b>2</b><span class="full">Get your code</span><span class="short">Code</span></li>
+          <li><b>3</b><span class="full">Show it &amp; go</span><span class="short">Pick up</span></li>
+        </ol>
+        <div class="meter"><i id="meter"></i></div>
+        <div class="swap" id="swap" aria-live="polite">
+          <p class="stepno" id="cStep">Step 1 of 11</p>
+          <h2 id="cTitle"></h2>
+          <div class="box what"><span class="k">What's happening</span><p id="cWhat"></p></div>
+          <div class="box next" id="nextBox"><svg viewBox="0 0 22 22" fill="none" stroke="var(--cue)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="9"/><path d="M8 11h6M11.5 8l3 3-3 3"/></svg><span class="k">What to do</span><p id="cNext"></p></div>
+          <div class="extra" id="cExtra"></div>
+        </div>
+        <div class="divider"></div>
+        <!-- desktop controls -->
+        <div class="controls desk-only">
+          <button class="btn" id="backBtn" type="button"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Back</button>
+          <button class="btn primary grow" id="doBtn" type="button"><span id="doLabel">Next step</span><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+        </div>
+        <div class="controls desk-only second">
+          <button class="btn play grow" id="playBtn" type="button"><svg viewBox="0 0 16 16" class="playIcon"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span class="playLabel">Play demo</span></button>
+          <button class="btn" id="restartBtn" type="button"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.5-3.5M3 2.5V5h2.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Start over</button>
+          <button class="btn sndBtn" id="soundBtn" type="button" aria-pressed="true" aria-label="Sound on. Tap to mute"><svg viewBox="0 0 16 16"></svg></button>
+        </div>
+        <!-- phone/tablet controls: one row -->
+        <div class="controls mobile-only">
+          <button class="btn" id="mBack" type="button" aria-label="Back"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+          <button class="btn play grow" id="mPlay" type="button"><svg viewBox="0 0 16 16" class="playIcon"><path d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span class="playLabel">Play</span></button>
+          <button class="btn primary grow" id="mNext" type="button"><span id="mNextLabel">Next</span><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+          <button class="btn" id="mRestart" type="button" aria-label="Start over"><svg viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.5-3.5M3 2.5V5h2.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+          <button class="btn sndBtn" id="mSound" type="button" aria-pressed="true" aria-label="Sound on. Tap to mute"><svg viewBox="0 0 16 16"></svg></button>
+          <button class="btn" id="mInfo" type="button" aria-expanded="false" aria-label="Show details and speed"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8 7.2v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="4.9" r="1.1" fill="currentColor"/></svg></button>
+        </div>
+        <div class="speed">
+          <label for="speed">Demo length</label>
+          <input type="range" id="speed" min="15" max="60" step="5" value="30">
+          <output class="speedOut" for="speed">30 sec</output>
+        </div>
+        <p class="coach-foot">Practice demo only. Nothing is sent or charged.<span class="app-version"> Version 1.0.20261023.15.</span> Stockyard is a made-up brand, and all names and prices are examples.<span class="kbd-line"><br>Keys: <kbd>Space</kbd> play or pause, <kbd>←</kbd> <kbd>→</kbd> step, <kbd>R</kbd> start over, <kbd>M</kbd> sound.</span></p>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script>
+(() => {
+  /* ---- Demo settings: edit these to change names, meds, prices ---- */
+  const COSTCO_LOGO = "data:image/png;base64,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";
+  const COSTCO = document.documentElement.getAttribute("data-brand") === "costco";
+  const BRAND = COSTCO
+    ? { name: "Costco", pharmacy: "Costco Pharmacy", domain: "pay.costcorx.example", red: "#e31837", blue: "#005dab", redHex: 0xe31837, blueHex: 0x005dab, initials: "CW" }
+    : { name: "Stockyard", pharmacy: "Stockyard Pharmacy", domain: "pay.stockyardrx.example", red: "#c4302b", blue: "#1d4f9a", redHex: 0xc4302b, blueHex: 0x1d4f9a, initials: "SY" };
+  const PHARMACY = BRAND.pharmacy;
+  const MEDS = [
+    { name: "Lisinopril 10 mg", detail: "30 tablets · Dr. Patel", price: 4.00 },
+    { name: "Atorvastatin 20 mg", detail: "30 tablets · Dr. Patel", price: 8.50 },
+    { name: "Metformin ER 500 mg", detail: "60 tablets · Dr. Alvarez", price: 3.25 }
+  ];
+  const METHODS = [
+    { id: "visa", name: "Visa ending 4242", note: "Card on file", chip: "VISA", color: "#1a2a6c" },
+    { id: "mc", name: "Mastercard ending 8810", note: "Card on file", chip: "MC", color: "#c2410c" },
+    { id: "hsa", name: "HSA/FSA card ending 3391", note: "Health savings card", chip: "HSA", color: "#1d9a52" }
+  ];
+  const SAMPLE_PATIENTS = [
+    ["Maria", "Lopez", "04121968"], ["James", "Carter", "09301975"], ["Linh", "Nguyen", "02171983"],
+    ["Robert", "Haynes", "11051952"], ["Aisha", "Rahman", "07221990"], ["Daniel", "Okafor", "03081961"],
+    ["Grace", "Whitfield", "12141947"], ["Carlos", "Mendoza", "06261979"]
+  ];
+  // Base timing in ms for a 30-second autoplay. The slider scales all of it.
+  const T = { notif: 700, move: 420, tapHold: 150, afterTap: 200, typeChar: 40, pause: 550, processing: 800, banner: 900, typingDots: 700,
+              passHold: 800, walk: 1900, mapHold: 250, scanHold: 250 };
+  const BASE_SECONDS = 30;
+  const PHASE_OF_STEP = [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 3];
+  const IDLE_RESET_MS = 180000; // on the last step, return to the start after 3 minutes untouched
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const root = document.documentElement;
+  const screen = $("#screen"), cue = $("#cue"), cueTag = $("#cueTag"), finger = $("#finger");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const money = n => "$" + n.toFixed(2);
+  const cap = s => s.replace(/(^|[\s'-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  const state = { inset: 0, step: 0, patient: { first: "Maria", last: "Lopez" }, picked: MEDS.map(() => true), method: null, counsel: null,
+    playing: false, finished: false, run: 0, timers: [], notifShown: false, bannerShown: false, qrShown: false, walkDone: false, sceneDone: false, k: 1, rendered: -1 };
+  const ms = x => Math.round(x * (reduce ? 0.35 : state.k));
+  const later = (fn, t) => state.timers.push(setTimeout(fn, t));
+  const clearTimers = () => { state.timers.forEach(clearTimeout); state.timers = []; };
+
+  /* ---- Sound: soft synthesized cues (Web Audio). The speaker button or the M key mutes them. ---- */
+  const Snd = (() => {
+    let ctx = null, master = null, on = true;
+    try { on = localStorage.getItem("payAheadSound") !== "off"; } catch (e) { /* storage blocked */ }
+    const ensure = () => {
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        ctx = new AC();
+        master = ctx.createGain(); master.gain.value = 0.22;
+        const comp = ctx.createDynamicsCompressor();
+        master.connect(comp); comp.connect(ctx.destination);
+      }
+      if (ctx.state === "suspended") ctx.resume();
+      return ctx;
+    };
+    const tone = (freq, start, dur, o = {}) => {
+      const { type = "sine", gain = 0.15, attack = 0.006, glide = 0 } = o;
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.type = type; osc.frequency.setValueAtTime(freq, start);
+      if (glide) osc.frequency.exponentialRampToValueAtTime(freq * glide, start + dur);
+      g.gain.setValueAtTime(0.0001, start); g.gain.exponentialRampToValueAtTime(gain, start + attack); g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      osc.connect(g); g.connect(master); osc.start(start); osc.stop(start + dur + 0.05);
+    };
+    const noise = (start, dur, o = {}) => {
+      const { gain = 0.05, f1 = 800, f2 = 800, q = 1 } = o;
+      const len = Math.ceil(ctx.sampleRate * dur), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+      for (let k = 0; k < len; k++) d[k] = Math.random() * 2 - 1;
+      const src = ctx.createBufferSource(); src.buffer = buf;
+      const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = q;
+      bp.frequency.setValueAtTime(f1, start); bp.frequency.exponentialRampToValueAtTime(f2, start + dur);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, start); g.gain.exponentialRampToValueAtTime(gain, start + dur * 0.3); g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      src.connect(bp); bp.connect(g); g.connect(master); src.start(start); src.stop(start + dur);
+    };
+    const play = fn => {
+      if (!on) return;
+      const c = ensure();
+      if (!c || c.state !== "running") return; // browsers allow sound only after the first tap
+      try { fn(c.currentTime + 0.01); } catch (e) { /* ignore */ }
+    };
+    return {
+      get on() { return on; },
+      set(v) { on = v; try { localStorage.setItem("payAheadSound", v ? "on" : "off"); } catch (e) { /* storage blocked */ } if (v) ensure(); },
+      unlock() { if (on) ensure(); },
+      // soft UI click: short filtered noise plus a tiny low thump
+      tap: () => play(t => { noise(t, 0.018, { gain: 0.05, f1: 3200, f2: 2600, q: 0.9 }); tone(170, t, 0.035, { gain: 0.035, glide: 0.7 }); }),
+      // keyboard tick, slightly varied
+      type: () => play(t => noise(t, 0.014, { gain: 0.028, f1: 2200 + Math.random() * 900, f2: 1800, q: 1.4 })),
+      // incoming message: two muted taps, like a phone's haptic buzz
+      chime: () => play(t => { [0, 0.11].forEach(d => { tone(210, t + d, 0.05, { gain: 0.05, glide: 0.75 }); noise(t + d, 0.02, { gain: 0.02, f1: 1200, f2: 900, q: 1 }); }); }),
+      // confirmed: a soft rounded pop
+      success: () => play(t => { tone(540, t, 0.12, { gain: 0.045, glide: 0.55 }); noise(t, 0.03, { gain: 0.02, f1: 2400, f2: 1600, q: 1 }); }),
+      // scanner: one short, quiet beep
+      beep: () => play(t => tone(1700, t, 0.06, { gain: 0.022 })),
+      // bag sliding on the counter: low, brief paper slide
+      swoosh: () => play(t => noise(t, 0.32, { gain: 0.035, f1: 260, f2: 620, q: 0.7 })),
+      // screen change: barely-there air
+      page: () => play(t => noise(t, 0.12, { gain: 0.012, f1: 1400, f2: 700, q: 0.6 })),
+      // ending: one warm, low swell
+      ending: () => play(t => { tone(196, t, 1.1, { gain: 0.03, attack: 0.18 }); tone(294, t + 0.05, 1.0, { gain: 0.022, attack: 0.2 }); })
+    };
+  })();
+  ["pointerdown", "keydown", "touchend"].forEach(ev => document.addEventListener(ev, () => Snd.unlock(), { capture: true, passive: true }));
+  const SPK_ON = '<path d="M2.5 6h2.6L8.6 3v10L5.1 10H2.5z" fill="currentColor"/><path d="M10.6 5.6a3.4 3.4 0 0 1 0 4.8M12.5 3.8a6 6 0 0 1 0 8.4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  const SPK_OFF = '<path d="M2.5 6h2.6L8.6 3v10L5.1 10H2.5z" fill="currentColor"/><path d="M11 6l3.6 4M14.6 6L11 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>';
+  function paintSound() {
+    $$(".sndBtn").forEach(b => {
+      b.setAttribute("aria-pressed", Snd.on);
+      b.setAttribute("aria-label", Snd.on ? "Sound on. Tap to mute" : "Sound off. Tap to turn on");
+      $("svg", b).innerHTML = Snd.on ? SPK_ON : SPK_OFF;
+    });
+  }
+  function toggleSound() { Snd.set(!Snd.on); paintSound(); Snd.tap(); }
+  $$(".sndBtn").forEach(b => b.addEventListener("click", toggleSound));
+  paintSound();
+
+  /* ---- Speed slider (remembered per device) ---- */
+  const sliders = [$("#speed")];
+  function applySpeed(secs) {
+    secs = Math.min(60, Math.max(15, +secs || BASE_SECONDS));
+    state.k = secs / BASE_SECONDS;
+    root.style.setProperty("--k", state.k.toFixed(3));
+    sliders.forEach(x => { x.value = secs; });
+    $$(".speedOut").forEach(o => o.textContent = secs + " sec");
+    try { localStorage.setItem("payAheadSeconds", secs); } catch (e) { if (e !== "cancel") console.error(e); }
+  }
+  sliders.forEach(x => x.addEventListener("input", () => applySpeed(x.value)));
+  let saved = BASE_SECONDS;
+  try { saved = +localStorage.getItem("payAheadSeconds") || BASE_SECONDS; } catch (e) { if (e !== "cancel") console.error(e); }
+  applySpeed(saved);
+
+  /* ---- Static content ---- */
+  $$(".pharm").forEach(e => e.textContent = PHARMACY);
+  if (COSTCO) {
+    // Re-skin the markup: names, web address, colors and the logo mark.
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (n.parentNode.closest("script,style")) continue;
+      n.nodeValue = n.nodeValue.replace(/stockyardrx/g, "costcorx").replace(/Stockyard is a made-up brand, and all names/g, "This is an unofficial demo, not affiliated with Costco. All names").replace(/Stockyard/g, "Costco").replace(/^SY$/, BRAND.initials);
+    }
+    $$("[fill='#c4302b']").forEach(e => e.setAttribute("fill", BRAND.red));
+    $$("[style*='#c4302b']").forEach(e => e.setAttribute("style", e.getAttribute("style").replace(/#c4302b/g, BRAND.red)));
+    $$(".logo svg, .site-head svg").forEach(svg => {
+      const img = document.createElement("img");
+      img.className = "costco-logo"; img.alt = "Costco Pharmacy"; img.src = COSTCO_LOGO;
+      svg.replaceWith(img);
+    });
+    const note = document.createElement("div");
+    note.className = "unofficial"; note.textContent = "Unofficial demo";
+    $('.scr[data-s="lock"]').appendChild(note);
+  }
+  const brandBtn = $("#brandBtn");
+  brandBtn.setAttribute("aria-pressed", COSTCO);
+  brandBtn.textContent = COSTCO ? "Generic mode" : "Costco mode";
+  brandBtn.addEventListener("click", () => {
+    try { localStorage.setItem("payAheadBrand", COSTCO ? "" : "costco"); } catch (e) { /* storage blocked */ }
+    // Reload to rebuild the 3D scene in the new colors, and come back to the same step.
+    location.href = location.pathname + (COSTCO ? "?brand=stockyard" : "?brand=costco") + (state.step > 0 ? "#step-" + (state.step + 1) : "");
+  });
+  $("#rxList").innerHTML = MEDS.map((m, i) => `<button type="button" class="rx" id="rx-${i}" aria-pressed="true"><span class="box"><svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></span><b>${m.name}</b><span class="tag">${money(m.price)}</span><small>${m.detail}</small></button>`).join("");
+  $("#methods").innerHTML = METHODS.map(m => `<button type="button" class="method" id="m-${m.id}" aria-pressed="false"><span class="chip" style="background:${m.color}">${m.chip}</span><span>${m.name}<small>${m.note}</small></span><span class="dot"></span></button>`).join("");
+
+  // Fake QR code (looks like one, encodes nothing)
+  function qrMatrix(seed) {
+    const n = 25; let s = seed; const rnd = () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const finder = (x, y) => (x < 7 && y < 7) || (x >= n - 7 && y < 7) || (x < 7 && y >= n - 7);
+    const m = [];
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      let on;
+      if (finder(x, y)) {
+        const fx = x >= n - 7 ? x - (n - 7) : x, fy = y >= n - 7 ? y - (n - 7) : y;
+        on = fx === 0 || fx === 6 || fy === 0 || fy === 6 || (fx >= 2 && fx <= 4 && fy >= 2 && fy <= 4);
+      } else if ((x === 7 || y === 7) && ((x < 8 && y < 8) || (x >= n - 8 && y < 8) || (x < 8 && y >= n - 8))) on = false;
+      else on = rnd() > .52;
+      if (on) m.push([x, y]);
+    }
+    return { n, m };
+  }
+  function fakeQr(seed) {
+    const { n, m } = qrMatrix(seed);
+    const d = m.map(([x, y]) => `M${x} ${y}h1v1h-1z`).join("");
+    return `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges"><rect width="${n}" height="${n}" fill="#fff"/><path d="${d}" fill="#111"/></svg>`;
+  }
+  $("#qrBox").innerHTML = fakeQr(48213);
+  $("#miniQr").innerHTML = fakeQr(48213);
+
+  function tickClock() {
+    const d = new Date();
+    const t = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(/\s?[AP]M/i, "");
+    $$(".clock-sm").forEach(e => e.textContent = t);
+    $("#lockClock").textContent = t;
+    $("#lockDate").textContent = d.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+  }
+  tickClock(); setInterval(tickClock, 15000);
+
+  /* ---- Steps ---- */
+  const dobDigits = () => $("#dob").value.replace(/\D/g, "").length;
+  const STEPS = [
+    { screen: "lock", title: "You get a text",
+      what: "When your prescriptions are ready, we send you a text.",
+      next: "Tap the text.",
+      target: () => state.notifShown ? "#notif" : null, tag: "Tap the text",
+      act: async t => { while (!state.notifShown) await wait(80, t); await wait(ms(250), t); await tap("#notif", t); } },
+    { screen: "msgs", title: "Open the link",
+      what: "The text has a link. It opens a web page. There is no app to download.",
+      next: "Tap the blue link.",
+      target: () => "#rxlink", tag: "Tap the link", act: t => tap("#rxlink", t) },
+    { screen: "verify", title: "Tell us who you are",
+      what: "You enter your name and date of birth. This keeps your order private.",
+      next: "Enter your name and date of birth. Then tap Continue.",
+      extra: () => `<div class="controls"><button class="btn" type="button" id="autoType">Type a sample name for me</button></div><p class="note">Any name works in this demo.</p>`,
+      target: () => !$("#fn").value.trim() ? "#fn" : !$("#ln").value.trim() ? "#ln" : dobDigits() < 8 ? "#dob" : "#verifyBtn",
+      tag: () => (!$("#fn").value.trim() || !$("#ln").value.trim() || dobDigits() < 8) ? "" : "Tap Continue",
+      act: async t => { await fillSample(t); await tap("#verifyBtn", t); } },
+    { screen: "select", title: "Pick your prescriptions",
+      what: "You see each prescription that is ready, and its price.",
+      next: "Uncheck any you don't need today. Then tap Continue.",
+      target: () => "#selectBtn", tag: "Tap Continue",
+      act: async t => { if (state.picked.every(Boolean)) { await tap(`#rx-${MEDS.length - 1}`, t); await wait(ms(250), t); } await tap("#selectBtn", t); } },
+    { screen: "pay", title: "Pay with your card",
+      what: "Choose a card. We also ask if you want to talk with the pharmacist.",
+      next: "Pick a card. Answer the question. Then tap Pay.",
+      extra: () => `<p class="note"><b>Yes</b> means a pharmacist will talk with you when you pick up. Either way, you use the green line.</p>`,
+      target: () => !state.method ? "#methods" : state.counsel === null ? "#counselQ" : "#payBtn",
+      tag: () => !state.method ? "Pick a card" : state.counsel === null ? "Pick one" : "Tap Pay",
+      act: async t => { if (!state.method) await tap("#m-visa", t); if (state.counsel === null) await tap("#counselNo", t); await tap("#payBtn", t); } },
+    { screen: "sent", title: "You're paid",
+      what: "Your order is paid. We text you a pickup code right away.",
+      next: "Tap the new text.",
+      target: () => state.bannerShown ? "#banner" : null, tag: "Tap the new text",
+      act: async t => { while (!state.bannerShown) await wait(80, t); await wait(Math.max(560, ms(400)), t); await tap("#banner", t); } },
+    { screen: "msgs", title: "Your pickup code",
+      what: "A second text arrives with your pickup code.",
+      next: "Tap the link to see your code.",
+      target: () => state.qrShown ? "#qrlink" : null, tag: "Tap the link",
+      act: async t => { while (!state.qrShown) await wait(80, t); await wait(ms(300), t); await tap("#qrlink", t); } },
+    { screen: "pass", title: "Your Pickup Pass",
+      what: "This is your pickup code. It also shows which line to use.",
+      next: "Keep it on your phone. Then come to the pharmacy.",
+      target: () => "#qrBox", tag: "Show this at pickup", doLabel: "Go to the pharmacy",
+      act: async t => { await wait(ms(T.passHold), t); go(8); } },
+    { screen: "map", title: "", what: "", next: "", doLabel: "Scan the code",
+      act: async t => { while (!state.walkDone) await wait(80, t); await wait(ms(T.mapHold), t); go(9); } },
+    { screen: "scan", title: "Scan and go",
+      what: "We scan your code. No signing. No paying at the counter.",
+      next: "Take your bag. You're done!",
+      doLabel: "See the benefits",
+      act: async t => { while (!state.sceneDone) await wait(80, t); await wait(ms(T.scanHold), t); go(10); } },
+    { screen: "benefits", title: "Try it next time",
+      what: "Pay before you come in. Pickup takes just a few seconds.",
+      next: "Next time we text you, tap the link and pay ahead.",
+      act: async () => {} }
+  ];
+  const LAST = STEPS.length - 1;
+
+  /* ---- Navigation ---- */
+  function showScreen(name) {
+    $$(".scr").forEach(s => s.classList.toggle("active", s.dataset.s === name));
+    $("#statusbar").classList.toggle("solid", name === "benefits");
+    if (name !== "scan") stop3D();
+    if (name !== "map") stopAisle();
+    $("#statusbar").classList.toggle("light", name === "lock");
+  }
+
+  function go(i) {
+    clearTimers();
+    state.step = i;
+    const s = STEPS[i];
+    hideCue();
+
+    // lock-screen notification arrives with a buzz
+    const notif = $("#notif");
+    if (i === 0) {
+      state.notifShown = false; notif.classList.add("pending");
+      later(() => {
+        notif.classList.remove("pending"); state.notifShown = true; Snd.chime();
+        const ph = $("#phone"); ph.classList.remove("buzz"); void ph.offsetWidth; if (!reduce) ph.classList.add("buzz");
+        later(placeCue, 600);
+      }, ms(T.notif));
+    } else { notif.classList.remove("pending"); state.notifShown = true; }
+
+    // banner for the QR text
+    const banner = $("#banner");
+    banner.classList.remove("show"); state.bannerShown = false;
+    if (s.screen === "sent") later(() => { banner.classList.add("show"); state.bannerShown = true; Snd.chime(); later(placeCue, 560); }, ms(T.banner));
+
+    // second text: typing dots, then the message
+    const b2 = $("#bubble2"), typing = $("#typing");
+    if (i < 6) { b2.hidden = true; typing.hidden = true; state.qrShown = false; }
+    else if (i === 6) {
+      b2.hidden = true; typing.hidden = false; state.qrShown = false;
+      later(() => { typing.hidden = true; b2.hidden = false; state.qrShown = true; Snd.tap(); scrollThread(); later(placeCue, 380); }, ms(T.typingDots));
+    } else { b2.hidden = false; typing.hidden = true; state.qrShown = true; }
+
+    showScreen(s.screen);
+    if (s.screen === "sent") Snd.success(); else if (i > 0) Snd.page();
+    if (s.screen === "msgs") scrollThread();
+    if (s.screen === "map") runMap();
+    if (s.screen === "scan") runScan();
+    if (s.screen === "benefits") runBenefits();
+    renderCoach();
+    later(placeCue, 380);
+    if (i === LAST) later(() => { if (!state.playing) restart(); }, IDLE_RESET_MS);
+  }
+  function scrollThread() { const th = $("#thread"); th.scrollTop = th.scrollHeight; }
+
+  function destInfo() {
+    const c = state.counsel === "yes";
+    return { c, name: "Green line · Pay Ahead", color: "--go", hex: "#1d9a52", tint: "#d9f2e3", short: "green Pay Ahead line",
+             sub: c ? "A pharmacist will talk with you at pickup." : "Skip the regular line." };
+  }
+
+  function renderCoach() {
+    const i = state.step, s = STEPS[i], d = destInfo();
+    const ph = PHASE_OF_STEP[i];
+    $$("#phases li").forEach((e, k) => { e.className = k < ph ? "done" : k === ph ? "now" : ""; });
+    $("#meter").style.width = (i / LAST * 100) + "%";
+    $("#cStep").textContent = `Step ${i + 1} of ${STEPS.length}`;
+    $("#backBtn").disabled = $("#mBack").disabled = i === 0;
+    $("#doBtn").hidden = $("#mNext").hidden = i === LAST;
+    $("#doLabel").textContent = s.doLabel || "Next step";
+    $("#mNextLabel").textContent = s.mLabel || "Next";
+    setPlayUI();
+
+    let title = s.title, what = s.what, next = s.next, extra = s.extra ? s.extra() : "";
+    const chip = `<div class="dest-chip" style="color:var(${d.color})"><i></i><span>${d.name}<small>Order RX-48213 · ${esc(state.patient.first)} ${esc(state.patient.last)}</small></span></div>`;
+    if (s.screen === "map") {
+      title = "Go to the green line";
+      what = "Green line on the right: already paid on your phone. Yellow line on the left: pay at the counter. See how much faster green moves.";
+      next = d.c ? "Go to the green line. A pharmacist will talk with you there." : "Go to the green Pay Ahead line. Have your code ready.";
+      extra = chip;
+    }
+    if (s.screen === "scan") extra = chip;
+    if (s.screen === "benefits") extra = `<ol class="recap">
+        <li><span>Tap the link in our text and pay.</span></li>
+        <li><span>We text you a <b>pickup code</b>.</span></li>
+        <li><span>Show the code at the <b style="color:var(--go)">green line</b>.</span></li></ol>`;
+
+    $("#cTitle").textContent = title;
+    $("#cWhat").textContent = what;
+    $("#cNext").textContent = next;
+    $("#cExtra").innerHTML = extra;
+    const at = $("#autoType");
+    if (at) at.onclick = async () => { stopPlay(); const t = state.run; try { await fillSample(t); } catch (e) { if (e !== "cancel") console.error(e); } };
+
+    if (state.rendered !== i) {
+      const sw = $("#swap"); sw.classList.remove("in"); void sw.offsetWidth; sw.classList.add("in");
+      state.rendered = i;
+    }
+    layout();
+  }
+
+  /* ---- Cue ring and label ---- */
+  function hideCue() { cue.hidden = true; last = ""; }
+  function visible(el) { return el && el.getClientRects().length > 0 && !el.closest("[hidden]"); }
+  function ensureVisible(el) {
+    const pg = el.closest(".page, .thread");
+    if (!pg) return;
+    const pr = pg.getBoundingClientRect(), er = el.getBoundingClientRect();
+    const bottom = Math.min(pr.bottom, screen.getBoundingClientRect().bottom - (state.inset || 0));
+    if (er.bottom > bottom - 44) pg.scrollTop += er.bottom - bottom + 56;
+    else if (er.top < pr.top + 8) pg.scrollTop -= pr.top - er.top + 16;
+  }
+  let cueEl = null;
+  function placeCue() {
+    const s = STEPS[state.step];
+    const sel = s.target && s.target();
+    const el = sel && $(sel, screen);
+    if (!visible(el)) { cueEl = null; return hideCue(); }
+    ensureVisible(el);
+    cueEl = el;
+    const tg = typeof s.tag === "function" ? s.tag() : s.tag;
+    cueTag.textContent = tg || "";
+    cueTag.hidden = !tg;
+    cue.hidden = false;
+    positionCue();
+  }
+  // Re-measure every frame so the ring never drifts when the layout shifts
+  let last = "";
+  function positionCue() {
+    if (!cueEl || cue.hidden) return;
+    if (!visible(cueEl)) { hideCue(); return; }
+    const sr = screen.getBoundingClientRect(), r = cueEl.getBoundingClientRect();
+    const pad = 6;
+    const left = Math.max(4, r.left - sr.left - pad), right = Math.min(sr.width - 4, r.right - sr.left + pad);
+    const top = Math.max(4, r.top - sr.top - pad), bottom = Math.min(sr.height - 4, r.bottom - sr.top + pad);
+    const below = sr.height - (state.inset || 0) - bottom > 18;
+    const w = cueTag.offsetWidth, cx = (left + right) / 2;
+    const want = Math.min(Math.max(cx - w / 2, 8), sr.width - 8 - w);
+    const key = [left, top, right, bottom, below, w].map(Math.round).join();
+    if (key === last) return;
+    last = key;
+    cue.style.left = left + "px"; cue.style.top = top + "px";
+    cue.style.width = (right - left) + "px"; cue.style.height = (bottom - top) + "px";
+    cueTag.className = "cue-tag " + (below ? "below" : "above") + (below && cueEl.tagName === "A" ? " out" : "");
+    cueTag.style.setProperty("--shift", Math.round(want - (cx - w / 2)) + "px");
+  }
+  (function track() { positionCue(); requestAnimationFrame(track); })();
+  let raf = 0;
+  const queueCue = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { if (!cue.hidden) placeCue(); }); };
+
+  /* ---- Layout: measure how much of the screen the glass dock covers ---- */
+  function layout() {
+    const c = $("#coach");
+    const fixed = getComputedStyle(c).position === "fixed";
+    if (fixed && c.classList.contains("open")) return; // the open dock is an overlay; keep the old inset
+    let inset = 0;
+    if (fixed) {
+      const cr = c.getBoundingClientRect();
+      inset = Math.max(0, Math.round(screen.getBoundingClientRect().bottom - cr.top + 10));
+    }
+    state.inset = inset;
+    root.style.setProperty("--inset-b", inset + "px");
+    queueCue();
+  }
+  addEventListener("resize", layout);
+  addEventListener("orientationchange", () => setTimeout(layout, 300));
+  if (window.ResizeObserver) new ResizeObserver(layout).observe($("#coach"));
+
+  /* ---- Simulated finger, ripple, typing ---- */
+  const wait = (t, run) => new Promise((res, rej) => setTimeout(() => (run !== undefined && run !== state.run) ? rej("cancel") : res(), t));
+  function ripple(x, y) {
+    if (reduce) return;
+    const r = document.createElement("span"); r.className = "ripple";
+    r.style.left = x + "px"; r.style.top = y + "px";
+    screen.appendChild(r); setTimeout(() => r.remove(), 600);
+  }
+  async function moveFinger(el, t) {
+    ensureVisible(el);
+    await wait(20, t);
+    const sr = screen.getBoundingClientRect(), r = el.getBoundingClientRect();
+    finger.classList.add("on");
+    finger.style.left = (r.left - sr.left + r.width / 2) + "px";
+    finger.style.top = (r.top - sr.top + r.height / 2) + "px";
+    await wait(ms(T.move) + 40, t);
+    return { x: r.left - sr.left + r.width / 2, y: r.top - sr.top + r.height / 2 };
+  }
+  async function tap(sel, t) {
+    const el = $(sel, screen);
+    if (!visible(el)) return;
+    const p = await moveFinger(el, t);
+    finger.classList.add("tap"); ripple(p.x, p.y); Snd.tap();
+    await wait(ms(T.tapHold), t);
+    finger.classList.remove("tap");
+    el.click();
+    await wait(ms(T.afterTap), t);
+    finger.classList.remove("on");
+  }
+  async function typeInto(sel, text, t) {
+    const el = $(sel);
+    const p = await moveFinger(el, t);
+    finger.classList.add("tap"); ripple(p.x, p.y); await wait(ms(120), t); finger.classList.remove("tap", "on");
+    el.value = ""; el.dispatchEvent(new Event("input"));
+    for (const ch of text) {
+      el.value += ch; el.dispatchEvent(new Event("input")); Snd.type();
+      await wait(ms(T.typeChar), t);
+    }
+  }
+  let sampleIdx = Math.floor(Math.random() * SAMPLE_PATIENTS.length);
+  async function fillSample(t) {
+    const [f, l, d] = SAMPLE_PATIENTS[sampleIdx++ % SAMPLE_PATIENTS.length];
+    $("#verifyErr").textContent = "";
+    await typeInto("#fn", f, t);
+    await typeInto("#ln", l, t);
+    await typeInto("#dob", d, t);
+    placeCue();
+  }
+  // real touches on the phone: show a ripple, and take over from autoplay
+  screen.addEventListener("pointerdown", e => {
+    if (!e.isTrusted) return;
+    const sr = screen.getBoundingClientRect(); ripple(e.clientX - sr.left, e.clientY - sr.top); Snd.tap();
+    if (state.playing) stopPlay();
+  });
+
+  /* ---- Phone interactions ---- */
+  $("#notif").addEventListener("click", () => { if (state.step === 0 && state.notifShown) go(1); });
+  $("#rxlink").addEventListener("click", e => { e.preventDefault(); if (state.step === 1) go(2); });
+  $("#qrlink").addEventListener("click", e => { e.preventDefault(); if (state.step === 6) go(7); });
+  $("#banner").addEventListener("click", () => { if (state.step === 5) go(6); });
+
+  const dob = $("#dob");
+  dob.addEventListener("input", () => {
+    const d = dob.value.replace(/\D/g, "").slice(0, 8);
+    let o = d.slice(0, 2);
+    if (d.length > 2) o += "/" + d.slice(2, 4);
+    if (d.length > 4) o += "/" + d.slice(4);
+    dob.value = o;
+  });
+  ["#fn", "#ln", "#dob"].forEach(s => $(s).addEventListener("input", e => { if (e.isTrusted) Snd.type(); $("#verifyErr").textContent = ""; queueCue(); }));
+
+  $("#verifyForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const f = $("#fn").value.trim(), l = $("#ln").value.trim();
+    if (!f || !l) { $("#verifyErr").textContent = "Enter your first and last name."; placeCue(); return; }
+    if (dobDigits() < 8) { $("#verifyErr").textContent = "Enter your date of birth as MM/DD/YYYY."; placeCue(); return; }
+    state.patient = { first: cap(f), last: cap(l) };
+    paintPatient();
+    if (document.activeElement) document.activeElement.blur();
+    go(3);
+  });
+  function paintPatient() {
+    $$(".pfirst").forEach(x => x.textContent = state.patient.first);
+    $$(".pfull").forEach(x => x.textContent = `${state.patient.first} ${state.patient.last}`);
+  }
+  function paintTotals() {
+    const n = state.picked.filter(Boolean).length;
+    const sum = MEDS.reduce((a, m, i) => a + (state.picked[i] ? m.price : 0), 0);
+    $$(".ptotal").forEach(e => e.textContent = money(sum));
+    $$(".pcount").forEach(e => e.textContent = n);
+    $$(".pword").forEach(e => e.textContent = n === 1 ? "prescription" : "prescriptions");
+    MEDS.forEach((m, i) => $(`#rx-${i}`).setAttribute("aria-pressed", state.picked[i]));
+    const b = $("#selectBtn");
+    b.disabled = n === 0;
+    b.textContent = n === 0 ? "Choose at least one" : `Continue · ${n} item${n > 1 ? "s" : ""} · ${money(sum)}`;
+  }
+  MEDS.forEach((m, i) => $(`#rx-${i}`).addEventListener("click", () => { state.picked[i] = !state.picked[i]; paintTotals(); queueCue(); }));
+  $("#selectBtn").addEventListener("click", () => { if (state.picked.some(Boolean)) go(4); });
+
+  function setMethod(id) {
+    state.method = id;
+    METHODS.forEach(m => $(`#m-${m.id}`).setAttribute("aria-pressed", m.id === id));
+    $$(".pmethod").forEach(e => e.textContent = METHODS.find(m => m.id === id).name);
+    $("#payErr").textContent = ""; placeCue();
+  }
+  METHODS.forEach(m => $(`#m-${m.id}`).addEventListener("click", () => setMethod(m.id)));
+  function setCounsel(v) {
+    state.counsel = v;
+    $("#counselYes").setAttribute("aria-pressed", v === "yes");
+    $("#counselNo").setAttribute("aria-pressed", v === "no");
+    $("#payErr").textContent = ""; placeCue();
+  }
+  $("#counselYes").addEventListener("click", () => setCounsel("yes"));
+  $("#counselNo").addEventListener("click", () => setCounsel("no"));
+  $("#payBtn").addEventListener("click", () => {
+    if (state.step !== 4) return;
+    if (!state.method) { $("#payErr").textContent = "Choose a card first."; placeCue(); return; }
+    if (state.counsel === null) { $("#payErr").textContent = "Please answer the pharmacist question."; placeCue(); return; }
+    hideCue();
+    paintDest();
+    showScreen("processing");
+    later(() => go(5), ms(T.processing));
+  });
+
+  function paintDest() {
+    const d = destInfo();
+    $$(".pdest").forEach(e => e.textContent = d.short);
+    $$(".pdest-cap").forEach(e => e.textContent = "Green Pay Ahead line");
+    const f = $("#laneFlag");
+    f.style.background = d.tint;
+    f.innerHTML = `<i style="background:${d.hex}"></i><span>Show at: Green Pay Ahead line<small>${d.sub}</small></span>`;
+  }
+
+  /* ---- Pickup lines: 3D aisle with live queues (2D floor plan as fallback) ---- */
+  let mapAnim = 0;
+  function runMap() {
+    state.walkDone = false;
+    const mc = $("#mapCallout");
+    mc.style.background = "#1d9a52";
+    mc.innerHTML = `<i></i><span>Go to the green line<small>Have your Pickup Pass ready.</small></span>`;
+    $("#statGo").textContent = "0 helped"; $("#statWait").textContent = "0 helped";
+    const has3d = !!initAisle();
+    $("#aisle3d").hidden = !has3d;
+    $("#mapPage").hidden = has3d;
+    if (has3d) {
+      startAisle();
+      later(() => { state.walkDone = true; }, ms(5500)); // safety net if animation frames are paused
+      return;
+    }
+    $$(".lane").forEach(l => { const me = l.id === "lane-go"; l.classList.toggle("dest", me); l.classList.toggle("dim", !me); });
+    const d = "M320 448 L320 128";
+    const path = $("#walkPath"), route = $("#route"), walker = $("#walker");
+    path.setAttribute("d", d); route.setAttribute("d", d);
+    $("#destMark").setAttribute("transform", "translate(320 128)");
+    const len = path.getTotalLength();
+    route.style.strokeDasharray = `${len} ${len}`;
+    route.style.strokeDashoffset = len;
+    walker.setAttribute("transform", "translate(320 448)");
+    const id = ++mapAnim, dur = ms(T.walk), t0 = performance.now() + Math.min(350, ms(350));
+    const frame = now => {
+      if (id !== mapAnim) return;
+      const k = dur ? Math.max(0, Math.min(1, (now - t0) / dur)) : 1;
+      const e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      const p = path.getPointAtLength(len * e);
+      walker.setAttribute("transform", `translate(${p.x} ${p.y})`);
+      route.style.strokeDashoffset = len * (1 - e);
+      if (k < 1) requestAnimationFrame(frame); else state.walkDone = true;
+    };
+    requestAnimationFrame(frame);
+    later(() => { state.walkDone = true; }, dur + 900);
+  }
+
+  // Lane setup (simulation seconds at the default pace): green serves fast, yellow slowly.
+  const LANES = {
+    go:   { x: 0.85, out: 1, call: 0.15, service: 0.5, spawn: 1.4, maxLen: 4, start: 1, statEl: "#statGo" },
+    wait: { x: -0.85, out: -1, call: 0.35, service: 2.4, spawn: 1.5, maxLen: 7, start: 6, statEl: "#statWait" }
+  };
+  const ZC = -0.95, ZW = 0.3, GAP = 0.62, WALK = 2.0; // counter spot, wait line (several feet back), spacing
+  let A = null;
+  function initAisle() {
+    if (A) return A;
+    if (!window.THREE) return null;
+    try {
+      const T3 = window.THREE;
+      const renderer = new T3.WebGLRenderer({ canvas: $("#aisle3d"), antialias: true });
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.shadowMap.enabled = true; renderer.shadowMap.type = T3.PCFSoftShadowMap;
+      renderer.outputEncoding = T3.sRGBEncoding;
+      const scene = new T3.Scene();
+      scene.background = new T3.Color(0xe9edf2);
+      scene.fog = new T3.Fog(0xe9edf2, 9, 20);
+      const camera = new T3.PerspectiveCamera(50, 0.6, 0.5, 40);
+      const std = (color, rough = 0.75, metal = 0) => new T3.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
+      const mesh = (geo, mat, cast = true, recv = true) => { const m = new T3.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = recv; return m; };
+      const tex = (w, h, draw) => {
+        const c = document.createElement("canvas"); c.width = w; c.height = h;
+        const ctx = c.getContext("2d"), fillText = ctx.fillText.bind(ctx);
+        ctx.fillText = (t, x, y, maxW) => {
+          const room = ctx.textAlign === "center" ? Math.min(x, w - x) * 2 : ctx.textAlign === "right" ? x : w - x;
+          fillText(t, x, y, Math.max(10, Math.min(maxW || Infinity, room - 8)));
+        };
+        draw(ctx, w, h);
+        const t = new T3.CanvasTexture(c); t.encoding = T3.sRGBEncoding; t.anisotropy = 4; return t;
+      };
+      const fit = (g, text, weight, family, max, width) => {
+        let size = max;
+        do { g.font = `${weight} ${size}px ${family}`; size -= 2; } while (g.measureText(text).width > width && size > 10);
+      };
+      const SIGN = '"Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif', BODY = '"Atkinson Hyperlegible", sans-serif';
+      const signTex = (text, bg, fg, w, h, size) => tex(w, h, g => {
+        g.fillStyle = bg; g.fillRect(0, 0, w, h); g.fillStyle = fg; g.textAlign = "center"; g.textBaseline = "middle";
+        fit(g, text, 800, SIGN, size, w * 0.9); g.fillText(text, w / 2, h / 2 + 2);
+      });
+      const sign2Tex = (title, sub, bg, fg, w, h) => tex(w, h, g => {
+        g.fillStyle = bg; g.fillRect(0, 0, w, h); g.fillStyle = fg; g.textAlign = "center"; g.textBaseline = "middle";
+        fit(g, title, 800, SIGN, h * 0.5, w * 0.9); g.fillText(title, w / 2, h * 0.36);
+        fit(g, sub, 700, BODY, h * 0.24, w * 0.9); g.fillText(sub, w / 2, h * 0.76);
+      });
+
+      scene.add(new T3.HemisphereLight(0xf4f7ff, 0xa9b1bd, 0.7));
+      const sun = new T3.DirectionalLight(0xfff3e4, 0.95);
+      sun.position.set(2.5, 7, 5); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+      sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.02; sun.shadow.radius = 5;
+      Object.assign(sun.shadow.camera, { left: -5, right: 5, top: 7, bottom: -4, near: 1, far: 20 });
+      scene.add(sun);
+      const fill = new T3.DirectionalLight(0xdbe6ff, 0.3); fill.position.set(-4, 3, 2); scene.add(fill);
+      // soft contact shadow used under every person
+      const blobTex = tex(128, 128, (g, w, h) => {
+        const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+        gr.addColorStop(0, "rgba(20, 28, 40, .42)"); gr.addColorStop(1, "rgba(20, 28, 40, 0)");
+        g.fillStyle = gr; g.fillRect(0, 0, w, h);
+      });
+      const blobMat = new T3.MeshBasicMaterial({ map: blobTex, transparent: true });
+      const blobGeo = new T3.PlaneGeometry(0.75, 0.75);
+      // Floor markings stack in fixed layers so they never fight each other or the floor.
+      const decal = (mat, layer) => { mat.depthWrite = false; mat.polygonOffset = true; mat.polygonOffsetFactor = -1; mat.polygonOffsetUnits = -4 * layer; return mat; };
+      decal(blobMat, 4);
+
+      // floor with large tiles, back wall, pharmacy sign
+      const floorTex = tex(512, 512, (g, w, h) => {
+        g.fillStyle = "#cfd3d8"; g.fillRect(0, 0, w, h);
+        for (let k = 0; k < 900; k++) { // faint mottling of polished concrete
+          g.fillStyle = Math.random() < .5 ? "rgba(255, 255, 255, .05)" : "rgba(60, 70, 80, .04)";
+          const r = 4 + Math.random() * 18; g.beginPath(); g.arc(Math.random() * w, Math.random() * h, r, 0, Math.PI * 2); g.fill();
+        }
+        g.strokeStyle = "rgba(90, 100, 112, .22)"; g.lineWidth = 2; // saw-cut joints
+        g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w / 2, h); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke();
+      });
+      floorTex.wrapS = floorTex.wrapT = T3.RepeatWrapping; floorTex.repeat.set(5, 5);
+      const floor = mesh(new T3.PlaneGeometry(30, 30), new T3.MeshStandardMaterial({ map: floorTex, roughness: 0.85 }), false, true);
+      floor.rotation.x = -Math.PI / 2; scene.add(floor);
+      const wall = mesh(new T3.PlaneGeometry(30, 10), std(0xe9ebee, 1), false, true);
+      wall.position.set(0, 5, -2.7); scene.add(wall);
+      const band = new T3.Mesh(new T3.PlaneGeometry(30, 0.32), new T3.MeshBasicMaterial({ color: BRAND.blueHex }));
+      band.position.set(0, 3.5, -2.67); scene.add(band);
+      // warehouse pallet racking: blue uprights, orange beams, stacked cartons
+      const upr = std(BRAND.blueHex, 0.55, 0.2), beam = std(0xe8742a, 0.5, 0.2);
+      const carton = [std(0xc9a26b, 0.95), std(0xb88f58, 0.95), std(0xe9e6df, 0.8)];
+      [-1, 1].forEach(side => {
+        const x0 = side * 2.35;
+        for (let z = -1.6; z <= 5.2; z += 1.7) {
+          [-0.35, 0.35].forEach(dx => { const u = mesh(new T3.BoxGeometry(0.07, 3.4, 0.07), upr); u.position.set(x0 + dx, 1.7, z); scene.add(u); });
+        }
+        [0.9, 1.9, 2.9].forEach(y => {
+          [-0.35, 0.35].forEach(dx => { const b = mesh(new T3.BoxGeometry(0.06, 0.1, 6.9), beam); b.position.set(x0 + dx, y, 1.8); scene.add(b); });
+          for (let z = -1.2; z <= 4.8; z += 0.85) { // a pallet of cartons per bay
+            const pal = mesh(new T3.BoxGeometry(0.66, 0.08, 0.7), std(0xa98b62, 0.9)); pal.position.set(x0, y + 0.09, z); scene.add(pal);
+            const hgt = 0.35 + ((z * 7 + y * 3) % 3) * 0.12;
+            const box = mesh(new T3.BoxGeometry(0.62, hgt, 0.66), carton[Math.abs(Math.round(z * 3 + y)) % 3]); box.position.set(x0, y + 0.13 + hgt / 2, z); scene.add(box);
+          }
+        });
+        const base = mesh(new T3.BoxGeometry(0.8, 0.05, 6.9), std(0xf2c230, 0.6)); base.position.set(x0, 0.026, 1.8); scene.add(base); // yellow safety curb
+      });
+      // red header band across the pharmacy, with an Rx mark, on white columns
+      const fascia = mesh(new T3.BoxGeometry(4.95, 0.46, 0.14), std(BRAND.redHex, 0.5)); fascia.position.set(0, 2.78, -1.95); scene.add(fascia);
+      const fasciaFace = new T3.Mesh(new T3.PlaneGeometry(4.9, 0.42), new T3.MeshBasicMaterial({ map: tex(1400, 120, (g, w, h) => {
+        g.fillStyle = BRAND.red; g.fillRect(0, 0, w, h);
+        g.fillStyle = "#ffffff"; g.beginPath(); g.arc(470, h / 2, 42, 0, Math.PI * 2); g.fill();
+        g.fillStyle = BRAND.red; g.font = '800 50px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("Rx", 470, h / 2 + 2);
+        g.fillStyle = "#ffffff"; g.font = '800 86px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.textAlign = "left"; g.fillText("PHARMACY", 535, h / 2 + 4);
+      }) }));
+      fasciaFace.position.set(0, 2.78, -1.868); scene.add(fasciaFace);
+      [-2.45, 2.45].forEach(x => { const col = mesh(new T3.BoxGeometry(0.18, 2.8, 0.18), std(0xf4f5f7, 0.7)); col.position.set(x, 1.4, -1.95); scene.add(col); });
+      for (let k = 0; k < 3; k++) { // shelves of filled prescriptions behind the counter
+        const shelf = mesh(new T3.BoxGeometry(4.4, 0.05, 0.4), std(0xcfd5dd)); shelf.position.set(0, 1.15 + k * 0.38, -2.45); scene.add(shelf);
+        for (let b = 0; b < 10; b++) {
+          const bin = mesh(new T3.BoxGeometry(0.3, 0.22, 0.3), std([0xffffff, 0xeef2f8, 0xf6e9e8][(b + k) % 3], 0.8));
+          bin.position.set(-2.0 + b * 0.44, 1.29 + k * 0.38, -2.42); scene.add(bin);
+        }
+      }
+
+      // counter
+      const counter = mesh(new T3.BoxGeometry(4.6, 0.66, 0.6), std(0xf2f3f5, 0.6)); counter.position.set(0, 0.33, -1.5); scene.add(counter);
+      const panel = mesh(new T3.BoxGeometry(4.62, 0.3, 0.02), std(BRAND.redHex, 0.5)); panel.position.set(0, 0.47, -1.19); scene.add(panel);
+      const kick = mesh(new T3.BoxGeometry(4.64, 0.08, 0.64), std(0x6b7280, 0.7)); kick.position.set(0, 0.04, -1.5); scene.add(kick);
+      const top = mesh(new T3.BoxGeometry(4.8, 0.05, 0.78), std(0xffffff, 0.35)); top.position.set(0, 0.685, -1.5); scene.add(top);
+      [-1.7, 0, 1.7].forEach(x => { const div = mesh(new T3.BoxGeometry(0.04, 0.48, 0.66), std(0xf7f8fa, 0.5)); div.position.set(x, 0.95, -1.5); scene.add(div); }); // privacy dividers
+
+      // people
+      const geo = { ring: new T3.RingGeometry(0.26, 0.33, 40) };
+      const SHIRTS = [0x5b7fa6, 0x7d9c8c, 0xa36d74, 0x6c6f85, 0xb59a6e, 0x4f86a0, 0x8a76a8, 0x7c8f5a, 0xb07a68, 0x6f8a96];
+      const SKINS = [0xe0b090, 0xc68a62, 0x8d5a3b, 0xf1c8a5, 0xa86f4c];
+      const PANTS = [0x2e3440, 0x3f4856, 0x283552, 0x4b4036, 0x55606e];
+      let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      const pick = arr => arr[Math.floor(rnd() * arr.length)];
+      // Simple flat figures: legs, a rounded body, a head. Materials are cached so nothing leaks.
+      const matCache = {};
+      const flat = (color, rough) => matCache[color] || (matCache[color] = std(color, rough));
+      const bodyGeo = new T3.LatheGeometry([[0, 0], [0.16, 0], [0.18, 0.12], [0.18, 0.4], [0.14, 0.52], [0, 0.56]].map(([x, y]) => new T3.Vector2(x, y)), 18);
+      const legGeo = new T3.CylinderGeometry(0.12, 0.11, 0.48, 14);
+      const headGeo = new T3.SphereGeometry(0.115, 18, 14);
+      function makePerson(shirt) {
+        const g = new T3.Group();
+        const legs = mesh(legGeo, flat(pick(PANTS), 0.9)); legs.position.y = 0.24; g.add(legs);
+        const body = mesh(bodyGeo, flat(shirt, 0.85)); body.position.y = 0.46; g.add(body);
+        const head = mesh(headGeo, flat(pick(SKINS), 0.7)); head.position.y = 1.14; g.add(head);
+        const blob = new T3.Mesh(blobGeo, blobMat); blob.rotation.x = -Math.PI / 2; blob.position.y = 0.024; blob.renderOrder = 4; g.add(blob);
+        g.scale.setScalar(0.95 + rnd() * 0.1);
+        scene.add(g);
+        return g;
+      }
+      // pharmacy staff behind each register
+      [LANES.go, LANES.wait].forEach(L => {
+        const staff = makePerson(0x1f6f78); staff.position.set(L.x, 0, -2.0);
+        const reg = mesh(new T3.BoxGeometry(0.34, 0.2, 0.26), std(0x2b313b, 0.5)); reg.position.set(L.x + 0.35, 0.82, -1.55); scene.add(reg);
+      });
+
+      // lanes: colored floor tape, floor lettering, hanging signs
+      [[LANES.go, 0x1d9a52, "PAY AHEAD", "Already paid", "#1d9a52", "#ffffff"], [LANES.wait, 0xe0ac00, "REGULAR PICKUP", "Pay at the counter", "#e0ac00", "#2a2100"]].forEach(([L, col, label, sub, bg, fg]) => {
+        [-0.5, 0.5].forEach(dx => {
+          const tape = mesh(new T3.PlaneGeometry(0.08, 7.4), decal(new T3.MeshStandardMaterial({ color: col, roughness: 0.6 }), 1), false, true);
+          tape.rotation.x = -Math.PI / 2; tape.position.set(L.x + dx, 0.012, 2.5); tape.renderOrder = 1; scene.add(tape);
+        });
+        const stop = mesh(new T3.PlaneGeometry(1.0, 0.08), decal(new T3.MeshStandardMaterial({ color: col, roughness: 0.6 }), 2), false, true); stop.renderOrder = 2;
+        stop.rotation.x = -Math.PI / 2; stop.position.set(L.x, 0.016, ZW - 0.32); scene.add(stop);
+        const waitTxt = new T3.Mesh(new T3.PlaneGeometry(1.0, 0.26), decal(new T3.MeshBasicMaterial({ map: signTex("PLEASE WAIT HERE", "rgba(0,0,0,0)", bg, 700, 180, 120), transparent: true }), 3)); waitTxt.renderOrder = 3;
+        waitTxt.rotation.x = -Math.PI / 2; waitTxt.position.set(L.x, 0.02, ZW - 0.56); scene.add(waitTxt);
+        const words = new T3.Mesh(new T3.PlaneGeometry(0.9, 0.3), decal(new T3.MeshBasicMaterial({ map: signTex(label.replace(" PICKUP", ""), "rgba(0,0,0,0)", bg, 600, 200, 130), transparent: true }), 3)); words.renderOrder = 3;
+        words.rotation.x = -Math.PI / 2; words.position.set(L.x, 0.02, 2.2); scene.add(words);
+        const frame = mesh(new T3.BoxGeometry(1.48, 0.64, 0.05), std(0x2b313b, 0.45, 0.3), true, false);
+        frame.position.set(L.x, 2.15, -0.98); scene.add(frame);
+        const board = new T3.Mesh(new T3.PlaneGeometry(1.4, 0.56), new T3.MeshBasicMaterial({ map: sign2Tex(label, sub, bg, fg, 700, 280), toneMapped: false }));
+        board.position.set(L.x, 2.15, -0.942); scene.add(board);
+        [-0.55, 0.55].forEach(dx => { const wire = mesh(new T3.CylinderGeometry(0.006, 0.006, 1.2, 4), std(0x8a929e), false, false); wire.position.set(L.x + dx, 3.03, -0.95); scene.add(wire); });
+      });
+
+      // "You" marker: orange shirt, floor ring, floating label
+      const youLabel = new T3.Sprite(new T3.SpriteMaterial({ map: tex(160, 80, g => {
+        g.fillStyle = "#ff7a00"; g.beginPath(); g.moveTo(20, 4); g.lineTo(140, 4); g.quadraticCurveTo(156, 4, 156, 20); g.lineTo(156, 56); g.quadraticCurveTo(156, 72, 140, 72); g.lineTo(20, 72); g.quadraticCurveTo(4, 72, 4, 56); g.lineTo(4, 20); g.quadraticCurveTo(4, 4, 20, 4); g.fill();
+        g.fillStyle = "#ffffff"; g.font = '800 46px "Atkinson Hyperlegible", sans-serif'; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("You", 80, 40);
+      }), depthTest: false }));
+      youLabel.scale.set(0.5, 0.25, 1); youLabel.renderOrder = 10;
+      const youRing = new T3.Mesh(geo.ring, decal(new T3.MeshBasicMaterial({ color: 0xff7a00, transparent: true, opacity: 0.85 }), 5)); youRing.renderOrder = 5;
+      youRing.rotation.x = -Math.PI / 2;
+
+      const bubbles = {};
+      Object.entries(LANES).forEach(([key, L]) => {
+        const b = new T3.Sprite(new T3.SpriteMaterial({ map: tex(300, 110, g => {
+          g.fillStyle = "#ffffff"; g.strokeStyle = "rgba(17, 20, 24, .15)"; g.lineWidth = 4;
+          g.beginPath(); g.moveTo(24, 6); g.lineTo(276, 6); g.quadraticCurveTo(294, 6, 294, 24); g.lineTo(294, 66); g.quadraticCurveTo(294, 84, 276, 84);
+          g.lineTo(170, 84); g.lineTo(150, 104); g.lineTo(140, 84); g.lineTo(24, 84); g.quadraticCurveTo(6, 84, 6, 66); g.lineTo(6, 24); g.quadraticCurveTo(6, 6, 24, 6); g.fill(); g.stroke();
+          g.fillStyle = "#111418"; g.font = '700 40px "Atkinson Hyperlegible", sans-serif'; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("Next, please!", 150, 46);
+        }), depthTest: false }));
+        b.scale.set(0.74, 0.27, 1); b.position.set(L.x, 1.5, -1.75); b.renderOrder = 11; b.visible = false; scene.add(b);
+        bubbles[key] = b;
+      });
+      A = { T3, renderer, scene, camera, makePerson, youLabel, youRing, bubbles, rnd, pick, SHIRTS, people: [], lanes: null, raf: 0, running: false, simT: 0, youDone: false };
+      return A;
+    } catch (err) {
+      console.error(err);
+      A = null;
+      return null;
+    }
+  }
+
+  function startAisle() {
+    if (!A) return;
+    A.people.forEach(p => A.scene.remove(p.g));
+    A.scene.remove(A.youLabel); A.scene.remove(A.youRing);
+    A.people = []; A.simT = 0; A.youDone = false; A.youSpawned = false;
+    A.lanes = {};
+    Object.entries(LANES).forEach(([key, L]) => {
+      const lane = Object.assign({ key, queue: [], atCounter: null, served: 0, timer: 0, callT: 0, spawnT: 0, bubble: A.bubbles[key], bubbleT: 0 }, L);
+      lane.bubble.visible = false;
+      for (let k = 0; k < L.start; k++) {
+        const g = A.makePerson(A.pick(A.SHIRTS));
+        const z = k === 0 ? ZC : ZW + (k - 1) * GAP;
+        const p = { g, x: L.x + (A.rnd() - .5) * 0.08, z, tx: L.x, tz: z, lane, phase: A.rnd() * 6, state: k === 0 ? "counter" : "queue", path: null };
+        g.position.set(p.x, 0, p.z); g.rotation.y = Math.PI;
+        if (k === 0) lane.atCounter = p; else lane.queue.push(p);
+        A.people.push(p);
+      }
+      A.lanes[key] = lane;
+      $(L.statEl).textContent = "0 helped";
+    });
+    A.running = true;
+    let last = performance.now();
+    cancelAnimationFrame(A.raf);
+    const tick = now => {
+      if (!A.running) return;
+      const dt = Math.min(0.05, (now - last) / 1000) / (reduce ? 0.35 : state.k);
+      last = now;
+      stepAisle(dt);
+      renderAisle();
+      A.raf = requestAnimationFrame(tick);
+    };
+    A.raf = requestAnimationFrame(tick);
+  }
+  function stopAisle() { if (A) { A.running = false; cancelAnimationFrame(A.raf); } }
+
+  function spawnPerson(lane, isYou) {
+    const g = A.makePerson(isYou ? 0xff7a00 : A.pick(A.SHIRTS));
+    const p = { g, x: isYou ? 0.3 : lane.x + (A.rnd() - .5) * 0.5, z: isYou ? 3.4 : 6.2, tx: lane.x, tz: 0, lane, phase: A.rnd() * 6, state: "queue", path: null, isYou };
+    g.position.set(p.x, 0, p.z);
+    if (isYou) { A.scene.add(A.youLabel); A.scene.add(A.youRing); }
+    lane.queue.push(p); A.people.push(p);
+    return p;
+  }
+
+  function turnToward(obj, target, rate) {
+    let d = (target - obj.rotation.y) % (Math.PI * 2);
+    if (d > Math.PI) d -= Math.PI * 2; else if (d < -Math.PI) d += Math.PI * 2;
+    obj.rotation.y += d * Math.min(1, rate);
+  }
+  function stepAisle(dt) {
+    A.simT += dt;
+    if (!A.youSpawned && A.simT > 0.25) { A.youSpawned = true; spawnPerson(A.lanes.go, true); }
+    const near = q => Math.hypot(q.x - q.tx, q.z - q.tz) < 0.06;
+    Object.values(A.lanes).forEach(L => {
+      L.queue.forEach((p, k) => { p.tx = L.x; p.tz = ZW + k * GAP; });
+      const c = L.atCounter;
+      if (c) {
+        c.tx = L.x; c.tz = ZC;
+        if (near(c)) {
+          L.timer += dt;
+          if (L.timer >= L.service) {
+            L.timer = 0; L.atCounter = null; L.served++;
+            const el = $(L.statEl); el.textContent = `${L.served} helped`; el.classList.add("bump"); setTimeout(() => el.classList.remove("bump"), 400);
+            c.state = "leave"; c.path = [[L.x + L.out * 0.95, ZC + 0.3], [L.x + L.out * 0.95, 7.2]];
+            if (c.isYou) { A.youDone = true; Snd.chime(); later(() => { state.walkDone = true; }, ms(500)); }
+          }
+        }
+      } else {
+        const f = L.queue[0];
+        if (f && near(f)) {
+          L.callT += dt;
+          if (L.callT >= L.call) { // staff calls the next person up from the line
+            L.callT = 0; L.queue.shift(); L.atCounter = f; f.state = "counter";
+            L.bubble.visible = true; L.bubbleT = 0.9;
+            if (f.isYou) Snd.tap();
+          }
+        } else L.callT = 0;
+      }
+      if (L.bubbleT > 0) { L.bubbleT -= dt; if (L.bubbleT <= 0) L.bubble.visible = false; }
+      L.spawnT += dt;
+      if (L.spawnT >= L.spawn && A.simT > 0.8) { L.spawnT = 0; if (L.queue.length < L.maxLen) spawnPerson(L, false); }
+    });
+    A.people = A.people.filter(p => {
+      let tx = p.tx, tz = p.tz;
+      if (p.state === "leave") {
+        if (!p.path.length) { A.scene.remove(p.g); if (p.isYou) { A.scene.remove(A.youLabel); A.scene.remove(A.youRing); } return false; }
+        [tx, tz] = p.path[0];
+      }
+      const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz), stepLen = WALK * dt;
+      const moving = d > 0.02;
+      if (d > stepLen) { p.x += dx / d * stepLen; p.z += dz / d * stepLen; }
+      else { p.x = tx; p.z = tz; if (p.state === "leave") p.path.shift(); }
+      if (moving) {
+        p.phase += dt * 9;
+        turnToward(p.g, Math.atan2(dx, dz), dt * 8);
+      } else turnToward(p.g, Math.PI, dt * 4);
+      p.g.position.set(p.x, moving ? Math.abs(Math.sin(p.phase)) * 0.02 : 0, p.z);
+      if (p.isYou) {
+        A.youLabel.position.set(p.x, 1.62, p.z);
+        A.youRing.position.set(p.x, 0.028, p.z);
+        A.youRing.material.opacity = 0.55 + Math.sin(A.simT * 6) * 0.3;
+      }
+      return true;
+    });
+  }
+
+  function renderAisle() {
+    const c = A.renderer.domElement, w = c.clientWidth, h = c.clientHeight;
+    if (!w || !h) return;
+    const pr = A.renderer.getPixelRatio();
+    if (c.width !== Math.round(w * pr) || c.height !== Math.round(h * pr)) A.renderer.setSize(w, h, false);
+    A.camera.aspect = w / h;
+    A.camera.fov = w / h < 0.75 ? 54 : 44;
+    A.camera.updateProjectionMatrix();
+    const push = Math.min(1, A.simT / 6);
+    A.camera.position.set(0, lerp(5.0, 4.7, push), lerp(6.6, 6.1, push));
+    A.camera.lookAt(0, 0.35, 0.9);
+    A.renderer.render(A.scene, A.camera);
+  }
+
+  /* ---- Scan scene: 3D counter (three.js), with a 2D fallback ---- */
+  // Base timeline in seconds at the default 30-second pace; the speed slider scales it.
+  const SCAN = { phoneIn: 1.0, aim: [0.5, 1.2], scan: [1.3, 2.6], bag: [2.9, 3.4, 4.3], away: [4.0, 4.7], done: 5.0 };
+  function setCap(text, mode) {
+    const c = $("#scanCap");
+    c.className = "scan-cap" + (mode ? " " + mode : "");
+    $("span", c).textContent = text;
+  }
+  function runScan() {
+    state.sceneDone = false;
+    const li = $$("#checks li"), sk = $("#skips"), st = $("#scanStage");
+    li.forEach(l => l.classList.remove("on")); sk.classList.remove("on");
+    st.classList.remove("aimed", "scanning", "handed", "ok");
+    const has3d = !!init3D();
+    $("#scan2d").hidden = has3d;
+    $("#scan3d").hidden = !has3d;
+    setCap("Show your code", "");
+    const at = (sec, fn) => later(fn, ms(sec * 1000));
+    if (has3d) start3D();
+    else {
+      at(0.3, () => st.classList.add("aimed"));
+      at(SCAN.scan[0], () => st.classList.add("scanning"));
+      at(SCAN.scan[1], () => { st.classList.remove("scanning"); st.classList.add("ok"); });
+      at(SCAN.bag[1], () => st.classList.add("handed"));
+    }
+    at(SCAN.scan[0], () => setCap("Scanning…", "scan"));
+    at(SCAN.scan[1], () => { setCap("Paid", "ok"); li[0].classList.add("on"); Snd.beep(); later(() => Snd.success(), 160); });
+    at(SCAN.bag[1], () => Snd.swoosh());
+    at(SCAN.scan[1] + 0.35, () => li[1].classList.add("on"));
+    at(SCAN.bag[2], () => { setCap("Here's your bag!", "ok"); li[2].classList.add("on"); });
+    at(SCAN.bag[2] + 0.35, () => { sk.classList.add("on"); setCap("Done! No signing, no paying", "ok"); });
+    at(SCAN.done, () => { state.sceneDone = true; });
+  }
+
+  let s3 = null;
+  function init3D() {
+    if (s3) return s3;
+    if (!window.THREE) return null;
+    try {
+      const T3 = window.THREE;
+      const canvas = $("#scan3d");
+      const renderer = new T3.WebGLRenderer({ canvas, antialias: true });
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = T3.PCFSoftShadowMap;
+      renderer.outputEncoding = T3.sRGBEncoding;
+      const scene = new T3.Scene();
+      scene.background = new T3.Color(0xe9edf2);
+      scene.fog = new T3.Fog(0xe9edf2, 8, 16);
+      const camera = new T3.PerspectiveCamera(50, 0.5, 0.3, 40);
+
+      const std = (color, rough = 0.7, metal = 0) => new T3.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
+      const mesh = (geo, mat, cast = true, recv = true) => { const m = new T3.Mesh(geo, mat); m.castShadow = cast; m.receiveShadow = recv; return m; };
+      const canvasTex = (w, h, draw) => {
+        const c = document.createElement("canvas"); c.width = w; c.height = h;
+        const ctx = c.getContext("2d"), fillText = ctx.fillText.bind(ctx);
+        ctx.fillText = (t, x, y, maxW) => {
+          const room = ctx.textAlign === "center" ? Math.min(x, w - x) * 2 : ctx.textAlign === "right" ? x : w - x;
+          fillText(t, x, y, Math.max(10, Math.min(maxW || Infinity, room - 8)));
+        };
+        draw(ctx, w, h);
+        const t = new T3.CanvasTexture(c); t.encoding = T3.sRGBEncoding; t.anisotropy = 4; return t;
+      };
+      const sign = (text, bg, fg, w, h, size) => canvasTex(w, h, (g) => {
+        g.fillStyle = bg; g.fillRect(0, 0, w, h);
+        g.fillStyle = fg; g.font = `800 ${size}px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif`;
+        g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, w / 2, h / 2 + 2);
+      });
+
+      // lights
+      scene.add(new T3.HemisphereLight(0xf4f7ff, 0xa9b1bd, 0.7));
+      const fillS = new T3.DirectionalLight(0xdbe6ff, 0.3); fillS.position.set(-4, 3, 2); scene.add(fillS);
+      const sun = new T3.DirectionalLight(0xfff3e4, 0.9);
+      sun.position.set(2.5, 6, 4); sun.castShadow = true;
+      sun.shadow.mapSize.set(1024, 1024);
+      Object.assign(sun.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 15 });
+      sun.shadow.radius = 4; sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.02;
+      scene.add(sun);
+      const flash = new T3.PointLight(0x2fe07a, 0, 3);
+      flash.position.set(0.15, 1.7, 0.5); scene.add(flash);
+
+      // room
+      const floor = mesh(new T3.PlaneGeometry(40, 40), std(0xd9dee5, 0.95), false, true);
+      floor.rotation.x = -Math.PI / 2; scene.add(floor);
+      const wall = mesh(new T3.PlaneGeometry(40, 10), std(0xf4f5f7, 1), false, true);
+      wall.position.set(0, 5, -2.6); scene.add(wall);
+      const sign1 = new T3.Mesh(new T3.PlaneGeometry(2.8, 0.52), new T3.MeshBasicMaterial({ map: sign("PHARMACY", BRAND.red, "#ffffff", 700, 130, 96) }));
+      sign1.position.set(-0.2, 3.25, -2.58); scene.add(sign1);
+      const sign2 = new T3.Mesh(new T3.PlaneGeometry(1.5, 0.42), new T3.MeshBasicMaterial({ map: sign("PAY AHEAD", "#1d9a52", "#ffffff", 450, 126, 84) }));
+      sign2.position.set(-0.2, 2.6, -2.57); scene.add(sign2);
+      // shelves behind the counter
+      for (let k = 0; k < 3; k++) {
+        const shelf = mesh(new T3.BoxGeometry(4.2, 0.06, 0.5), std(0xcfd5dd));
+        shelf.position.set(-0.2, 1.4 + k * 0.42, -2.3); scene.add(shelf);
+        for (let b = 0; b < 9; b++) {
+          const bin = mesh(new T3.BoxGeometry(0.34, 0.26, 0.34), std([0xffffff, 0xeef2f8, 0xf6e9e8][(b + k) % 3], 0.8));
+          bin.position.set(-2.0 + b * 0.45, 1.56 + k * 0.42, -2.25); scene.add(bin);
+        }
+      }
+
+      // counter
+      const body = mesh(new T3.BoxGeometry(5, 1.06, 1.1), std(BRAND.redHex, 0.55));
+      body.position.set(-0.2, 0.53, 0); scene.add(body);
+      const stripe = mesh(new T3.BoxGeometry(5.01, 0.07, 1.11), std(0xffffff, 0.5));
+      stripe.position.set(-0.2, 0.86, 0); scene.add(stripe);
+      const topSlab = mesh(new T3.BoxGeometry(5.2, 0.08, 1.35), std(0xf3efe8, 0.45));
+      topSlab.position.set(-0.2, 1.1, 0); scene.add(topSlab);
+      const kick = mesh(new T3.BoxGeometry(5.0, 0.12, 1.0), std(0x2b313b, 0.8));
+      kick.position.set(-0.2, 0.06, 0.06); scene.add(kick);
+      const TOP = 1.14;
+
+      // The same iPhone as the rest of the demo, showing the same Pickup Pass screen.
+      const qr = qrMatrix(48213);
+      const rrect = (g, x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+      const drawPass = (g, w, h, paid) => {
+        const sum = MEDS.reduce((a, m, k) => a + (state.picked[k] ? m.price : 0), 0);
+        g.fillStyle = "#ffffff"; g.fillRect(0, 0, w, h);
+        // status bar + Dynamic Island
+        g.fillStyle = "#111418"; g.font = '600 26px -apple-system, "Segoe UI", sans-serif'; g.textAlign = "left"; g.textBaseline = "middle";
+        g.fillText("9:41", 44, 40);
+        g.fillRect(w - 92, 32, 34, 16); g.fillRect(w - 52, 30, 4, 20);
+        g.fillStyle = "#000"; rrect(g, w / 2 - 70, 18, 140, 42, 21); g.fill();
+        // browser address bar
+        g.fillStyle = "#f2f3f5"; g.fillRect(0, 70, w, 66);
+        g.fillStyle = "#e3e5e9"; rrect(g, 24, 80, w - 48, 44, 14); g.fill();
+        g.fillStyle = "#333"; g.font = '400 22px -apple-system, "Segoe UI", sans-serif'; g.textAlign = "center"; g.fillText(BRAND.domain, w / 2, 103);
+        // store header
+        g.fillStyle = BRAND.red; g.fillRect(0, 136, w, 62);
+        g.fillStyle = "#ffffff"; rrect(g, 22, 148, 38, 38, 8); g.fill();
+        g.fillStyle = BRAND.red; g.fillRect(29, 157, 24, 8); g.fillRect(29, 169, 11, 8); g.fillRect(42, 169, 11, 8);
+        g.fillStyle = "#ffffff"; g.textAlign = "left"; g.font = 'italic 900 30px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.fillText("STOCKYARD", 72, 168);
+        g.textAlign = "right"; g.font = '600 18px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.fillText("PHARMACY", w - 22, 168);
+        // pass heading and name
+        g.textAlign = "center"; g.fillStyle = BRAND.red; g.font = '800 44px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.fillText("PICKUP PASS", w / 2, 238);
+        g.fillStyle = "#111418"; g.font = '600 24px -apple-system, "Segoe UI", sans-serif'; g.fillText(`${state.patient.first} ${state.patient.last}`, w / 2, 276);
+        // QR code in a bordered card
+        const box = 300, bx = (w - box) / 2, by = 300;
+        g.fillStyle = "#fff"; g.strokeStyle = "#111"; g.lineWidth = 4; rrect(g, bx, by, box, box, 20); g.fill(); g.stroke();
+        const pad = 20, cell = (box - pad * 2) / qr.n;
+        g.fillStyle = "#111"; qr.m.forEach(([x, y]) => g.fillRect(bx + pad + x * cell, by + pad + y * cell, Math.ceil(cell), Math.ceil(cell)));
+        // order card
+        g.strokeStyle = "#e3e6ea"; g.lineWidth = 2; rrect(g, 24, 624, w - 48, 92, 16); g.stroke();
+        g.font = '400 21px -apple-system, "Segoe UI", sans-serif'; g.textAlign = "left"; g.fillStyle = "#6b7178"; g.fillText("Order", 44, 652); g.fillText("Status", 44, 690);
+        g.textAlign = "right"; g.fillStyle = "#111418"; g.font = '700 21px -apple-system, "Segoe UI", sans-serif'; g.fillText("RX-48213", w - 44, 652);
+        g.fillStyle = "#1d9a52"; g.fillText(`Paid · ${money(sum)}`, w - 44, 690);
+        // lane flag
+        g.fillStyle = "#d9f2e3"; rrect(g, 24, 734, w - 48, 82, 16); g.fill();
+        g.fillStyle = "#1d9a52"; rrect(g, 42, 750, 14, 50, 4); g.fill();
+        g.textAlign = "left"; g.fillStyle = "#10261f"; g.font = '700 22px -apple-system, "Segoe UI", sans-serif'; g.fillText("Show at: Green Pay Ahead line", 72, 764);
+        g.fillStyle = "#3b4a46"; g.font = '400 18px -apple-system, "Segoe UI", sans-serif'; g.fillText("Skip the regular line.", 72, 792);
+        g.textAlign = "center"; g.fillStyle = "#6b7178"; g.font = '400 16px -apple-system, "Segoe UI", sans-serif'; g.fillText("Turn up your screen brightness so the code scans quickly.", w / 2, 846);
+        g.fillStyle = "#cfd5dd"; rrect(g, w / 2 - 70, h - 22, 140, 8, 4); g.fill(); // home indicator
+        if (paid) {
+          g.fillStyle = "rgba(29, 154, 82, .9)"; g.fillRect(0, 70, w, h - 70);
+          g.fillStyle = "#ffffff"; g.beginPath(); g.arc(w / 2, h * 0.45, 110, 0, Math.PI * 2); g.fill();
+          g.strokeStyle = "#1d9a52"; g.lineWidth = 28; g.lineCap = "round"; g.lineJoin = "round";
+          g.beginPath(); g.moveTo(w / 2 - 50, h * 0.45 + 2); g.lineTo(w / 2 - 10, h * 0.45 + 42); g.lineTo(w / 2 + 58, h * 0.45 - 42); g.stroke();
+          g.fillStyle = "#ffffff"; g.textAlign = "center"; g.font = '800 90px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.fillText("PAID", w / 2, h * 0.68);
+        }
+      };
+      const roundedRect = (w, h, r) => {
+        const sh = new T3.Shape();
+        sh.moveTo(-w / 2 + r, -h / 2); sh.lineTo(w / 2 - r, -h / 2); sh.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r);
+        sh.lineTo(w / 2, h / 2 - r); sh.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2); sh.lineTo(-w / 2 + r, h / 2);
+        sh.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r); sh.lineTo(-w / 2, -h / 2 + r); sh.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
+        return sh;
+      };
+      const PW = 0.62, PH = 1.28;
+      const phone = new T3.Group();
+      const bodyGeo = new T3.ExtrudeGeometry(roundedRect(PW - 0.02, PH - 0.02, 0.1), { depth: 0.05, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 4, curveSegments: 12 });
+      bodyGeo.translate(0, 0, -0.025);
+      phone.add(mesh(bodyGeo, std(0x16181c, 0.35, 0.5)));
+      const SW = 0.57, SH = 1.23;
+      const scrGeo = new T3.ShapeGeometry(roundedRect(SW, SH, 0.075), 12);
+      const sp = scrGeo.attributes.position, suv = scrGeo.attributes.uv;
+      for (let k = 0; k < sp.count; k++) suv.setXY(k, sp.getX(k) / SW + 0.5, sp.getY(k) / SH + 0.5);
+      const screenMat = new T3.MeshBasicMaterial({ map: canvasTex(512, 1104, (g, w, h) => drawPass(g, w, h, false)) });
+      const scr = new T3.Mesh(scrGeo, screenMat); scr.position.z = 0.0365; phone.add(scr);
+      [[-1, 0.28, 0.1], [-1, 0.14, 0.1], [1, 0.2, 0.18]].forEach(([sx, y, len]) => { // side buttons
+        const btn = mesh(new T3.BoxGeometry(0.014, len, 0.03), std(0x24272d, 0.4, 0.5)); btn.position.set(sx * (PW / 2 + 0.004), y, 0); phone.add(btn);
+      });
+      const bump = mesh(new T3.BoxGeometry(0.2, 0.2, 0.014), std(0x202329, 0.4, 0.4)); bump.position.set(-0.15, 0.47, -0.042); phone.add(bump); // camera bump
+      const scanLine = new T3.Mesh(new T3.PlaneGeometry(SW, 0.016), new T3.MeshBasicMaterial({ color: 0xff2d2d, transparent: true, opacity: 0.9 }));
+      scanLine.position.z = 0.04; scanLine.visible = false; phone.add(scanLine);
+      scene.add(phone);
+
+      // handheld scanner (staff side)
+      const gun = new T3.Group();
+      const head = mesh(new T3.BoxGeometry(0.3, 0.22, 0.46), std(0x2b313b, 0.5, 0.2));
+      gun.add(head);
+      const grip = mesh(new T3.BoxGeometry(0.16, 0.42, 0.18), std(0x2b313b, 0.5, 0.2));
+      grip.position.set(0, -0.22, -0.2); grip.rotation.x = -0.45; gun.add(grip);
+      const trigger = mesh(new T3.BoxGeometry(0.06, 0.1, 0.08), std(0xffd400, 0.4));
+      trigger.position.set(0, -0.14, -0.04); gun.add(trigger);
+      const lens = new T3.Mesh(new T3.PlaneGeometry(0.24, 0.14), new T3.MeshBasicMaterial({ color: 0xff2d2d }));
+      lens.position.set(0, 0, 0.231); gun.add(lens);
+      const beam = new T3.Mesh(new T3.ConeGeometry(0.34, 1, 24, 1, true), new T3.MeshBasicMaterial({ color: 0xff3030, transparent: true, opacity: 0.18, side: T3.DoubleSide, depthWrite: false }));
+      beam.visible = false; scene.add(beam);
+      scene.add(gun);
+
+      // Closed kraft pharmacy bag: gusseted sides, top rolled over twice, receipt stapled through the fold.
+      const kraftTex = (() => {
+        const t = canvasTex(256, 256, (g, w, h) => {
+          g.fillStyle = "#c79d66"; g.fillRect(0, 0, w, h);
+          for (let k = 0; k < 2600; k++) { // paper speckle
+            const v = Math.random();
+            g.fillStyle = v < .5 ? "rgba(70, 42, 18, .10)" : "rgba(255, 236, 205, .10)";
+            g.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 2, 1 + Math.random() * 2);
+          }
+          for (let k = 0; k < 70; k++) { // long fibers
+            g.strokeStyle = `rgba(${Math.random() < .5 ? "80, 50, 22" : "235, 205, 160"}, .14)`;
+            g.lineWidth = 1; g.beginPath();
+            const x = Math.random() * w, y = Math.random() * h;
+            g.moveTo(x, y); g.lineTo(x + (Math.random() - .5) * 8, y + 10 + Math.random() * 30); g.stroke();
+          }
+        });
+        t.wrapS = t.wrapT = T3.RepeatWrapping;
+        return t;
+      })();
+      const kraft = new T3.MeshStandardMaterial({ map: kraftTex, roughness: 0.96, metalness: 0 });
+      const kraftDark = new T3.MeshStandardMaterial({ map: kraftTex, color: 0xd9c4ae, roughness: 0.96 });
+
+
+      // Simple kraft pharmacy bag: a clean bag whose top is pressed closed in the middle, folded over once
+      // onto the front (zigzag edge) and stapled once in the middle.
+      const bag = new T3.Group();
+      const W = 0.36, D = 0.21, H = 0.6, PIN = 0.08, T = 0.012;
+      const paperTex = canvasTex(512, 512, (g, w, h) => {
+        g.fillStyle = "#c49b69"; g.fillRect(0, 0, w, h);
+        for (let k = 0; k < 7000; k++) { g.fillStyle = Math.random() < 0.5 ? "rgba(90, 60, 28, .05)" : "rgba(255, 240, 215, .05)"; g.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 2, 1); }
+        for (let k = 0; k < 160; k++) { g.strokeStyle = `rgba(${Math.random() < 0.5 ? "95, 64, 30" : "250, 228, 195"}, .06)`; const x = Math.random() * w, y = Math.random() * h; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (Math.random() - 0.5) * 3, y + 6 + Math.random() * 20); g.stroke(); }
+      });
+      paperTex.wrapS = paperTex.wrapT = T3.RepeatWrapping; paperTex.repeat.set(3, 3);
+      const paper = new T3.MeshStandardMaterial({ map: paperTex, roughness: 0.93 });
+      // body: straight sides, pressed together in the middle at the top
+      const prof = new T3.Shape();
+      prof.moveTo(-D / 2, 0); prof.lineTo(D / 2, 0); prof.lineTo(D / 2, H - PIN); prof.lineTo(T / 2, H); prof.lineTo(-T / 2, H); prof.lineTo(-D / 2, H - PIN); prof.lineTo(-D / 2, 0);
+      const BEV = 0.004;
+      const bodyGeo2 = new T3.ExtrudeGeometry(prof, { depth: W - BEV * 2, bevelEnabled: true, bevelThickness: BEV, bevelSize: BEV, bevelSegments: 2, curveSegments: 1 });
+      bodyGeo2.rotateY(Math.PI / 2); bodyGeo2.translate(-(W - BEV * 2) / 2, 0, 0);
+      bag.add(mesh(bodyGeo2, paper));
+      // one soft crease up the middle of each side (the gusset fold)
+      const creaseMat = new T3.MeshBasicMaterial({ color: 0x6f4b22, transparent: true, opacity: 0.22, depthWrite: false });
+      [-1, 1].forEach(sx => { const c = new T3.Mesh(new T3.PlaneGeometry(0.005, H - PIN - 0.03), creaseMat); c.position.set(sx * (W / 2 + 0.002), (H - PIN) / 2, 0); c.rotation.y = sx * Math.PI / 2; bag.add(c); });
+      // the folded-over top: starts at the closed top edge, runs down the front slope, ends in a zigzag edge
+      const slopeA = Math.atan2(D / 2 - T / 2, PIN), slopeLen = Math.hypot(D / 2 - T / 2, PIN);
+      const flapTex = canvasTex(512, 220, (g, w, h) => {
+        g.drawImage(paperTex.image, 0, 0, 512, 512);
+        g.globalCompositeOperation = "destination-out";
+        g.beginPath(); g.moveTo(0, h); const n = 60, tw = w / n;
+        for (let k = 0; k <= n; k++) g.lineTo(k * tw, h - (k % 2 ? 16 : 2));
+        g.lineTo(w, h); g.closePath(); g.fill(); g.globalCompositeOperation = "source-over";
+      });
+      const FLEN = slopeLen + 0.035;
+      const flapPts = [], flapUV = [], flapIdx = [], NS = 16;
+      for (let k = 0; k <= NS; k++) {
+        const d = FLEN * k / NS, off = BEV + 0.005;
+        let y, z;
+        if (d <= slopeLen) { y = H - d * Math.cos(slopeA) + off * Math.sin(slopeA); z = T / 2 + d * Math.sin(slopeA) + off * Math.cos(slopeA); }
+        else { y = H - PIN - (d - slopeLen) + 0.002; z = D / 2 + off; }
+        flapPts.push(-(W + 0.004) / 2, y, z, (W + 0.004) / 2, y, z); flapUV.push(0, 1 - k / NS, 1, 1 - k / NS);
+        if (k < NS) { const a = k * 2; flapIdx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+      }
+      const flapGeo = new T3.BufferGeometry();
+      flapGeo.setAttribute("position", new T3.Float32BufferAttribute(flapPts, 3));
+      flapGeo.setAttribute("uv", new T3.Float32BufferAttribute(flapUV, 2));
+      flapGeo.setIndex(flapIdx); flapGeo.computeVertexNormals();
+      const flap = new T3.Mesh(flapGeo, new T3.MeshStandardMaterial({ map: flapTex, roughness: 0.93, transparent: true, alphaTest: 0.5, side: T3.DoubleSide }));
+      flap.castShadow = true; bag.add(flap);
+      const topFold = mesh(new T3.CylinderGeometry(T / 2 + BEV + 0.005, T / 2 + BEV + 0.005, W + 0.004, 16), paper);
+      topFold.rotation.z = Math.PI / 2; topFold.position.set(0, H, 0); bag.add(topFold);
+      const shade = new T3.Mesh(new T3.PlaneGeometry(W, 0.012), new T3.MeshBasicMaterial({ color: 0x4a2f12, transparent: true, opacity: 0.18, depthWrite: false }));
+      shade.position.set(0, H - PIN - 0.034, D / 2 + BEV + 0.002); bag.add(shade);
+      // one staple in the middle of the fold
+      const staple = mesh(new T3.BoxGeometry(0.045, 0.006, 0.004), std(0xc9ced6, 0.25, 0.9), false, false);
+      const sd = slopeLen * 0.55;
+      staple.position.set(0, H - sd * Math.cos(slopeA) + (BEV + 0.009) * Math.sin(slopeA), T / 2 + sd * Math.sin(slopeA) + (BEV + 0.009) * Math.cos(slopeA));
+      staple.rotation.x = -slopeA; bag.add(staple);
+      bag.scale.setScalar(1.12);
+      scene.add(bag);
+
+      // customer-facing display on the counter: "Scan your pickup code" then "Paid"
+      const drawDisplay = (g, w, h, paid) => {
+        g.fillStyle = paid ? "#1d9a52" : BRAND.blue; g.fillRect(0, 0, w, h);
+        g.fillStyle = "#ffffff"; g.textAlign = "center"; g.textBaseline = "middle";
+        if (paid) {
+          g.font = '800 120px "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif'; g.fillText("PAID", w / 2, h * 0.42);
+          g.font = '400 40px "Atkinson Hyperlegible", sans-serif'; g.fillText("No signature needed", w / 2, h * 0.74);
+        } else {
+          g.font = '700 58px "Atkinson Hyperlegible", sans-serif'; g.fillText("Scan your", w / 2, h * 0.36); g.fillText("pickup code", w / 2, h * 0.6);
+        }
+      };
+      const display = new T3.Group();
+      const dStand = mesh(new T3.CylinderGeometry(0.03, 0.05, 0.28, 12), std(0x2b313b, 0.5, 0.3));
+      dStand.position.y = 0.14; display.add(dStand);
+      const dBase = mesh(new T3.CylinderGeometry(0.12, 0.13, 0.03, 20), std(0x2b313b, 0.5, 0.3));
+      dBase.position.y = 0.015; display.add(dBase);
+      const dBody = mesh(new T3.BoxGeometry(0.56, 0.4, 0.05), std(0x1b1f24, 0.4, 0.3));
+      dBody.position.y = 0.46; dBody.rotation.x = -0.18; display.add(dBody);
+      const dispMat = new T3.MeshBasicMaterial({ map: canvasTex(560, 400, (g, w, h) => drawDisplay(g, w, h, false)) });
+      const dScreen = new T3.Mesh(new T3.PlaneGeometry(0.5, 0.34), dispMat);
+      dScreen.position.set(0, 0.46, 0.027); dScreen.rotation.x = -0.18; display.add(dScreen);
+      display.position.set(0.85, 1.14, 0.15); display.rotation.y = -0.55;
+      scene.add(display);
+
+      s3 = { T3, renderer, scene, camera, phone, scr, screenMat, drawPass, canvasTex, scanLine, gun, beam, bag, flash, TOP, dispMat, drawDisplay, running: false, t0: 0, paid: false, raf: 0 };
+      return s3;
+    } catch (err) {
+      console.error(err);
+      s3 = null;
+      return null;
+    }
+  }
+
+  const clamp01 = x => Math.max(0, Math.min(1, x));
+  const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const span = (t, a, b) => ease(clamp01((t - a) / (b - a)));
+
+  function start3D() {
+    const S = s3; if (!S) return;
+    // redraw the pass with the current patient's name
+    S.screenMat.map.dispose();
+    S.screenMat.map = S.canvasTex(512, 1104, (g, w, h) => S.drawPass(g, w, h, false));
+    S.dispMat.map.dispose();
+    S.dispMat.map = S.canvasTex(560, 400, (g, w, h) => S.drawDisplay(g, w, h, false));
+    S.paid = false;
+    S.running = true;
+    S.t0 = performance.now();
+    cancelAnimationFrame(S.raf);
+    const tick = () => {
+      if (!S.running) return;
+      render3D((performance.now() - S.t0) / 1000 / (reduce ? 0.35 : state.k));
+      S.raf = requestAnimationFrame(tick);
+    };
+    S.raf = requestAnimationFrame(tick);
+  }
+  function stop3D() { if (s3) { s3.running = false; cancelAnimationFrame(s3.raf); } }
+
+  function render3D(t) {
+    const S = s3, T3 = S.T3, c = S.renderer.domElement;
+    const w = c.clientWidth, h = c.clientHeight;
+    if (!w || !h) return;
+    if (c.width !== Math.round(w * S.renderer.getPixelRatio()) || c.height !== Math.round(h * S.renderer.getPixelRatio())) {
+      S.renderer.setSize(w, h, false);
+    }
+    const aspect = w / h;
+    S.camera.aspect = aspect;
+    S.camera.fov = aspect < 0.75 ? 50 : 42;
+    S.camera.updateProjectionMatrix();
+
+    // camera: slow push-in toward the counter
+    const cp = span(t, 0, SCAN.done);
+    S.camera.position.set(lerp(1.5, 1.05, cp), lerp(2.75, 2.5, cp), lerp(3.5, 2.75, cp));
+    const look = span(t, SCAN.bag[1], SCAN.done);
+    S.camera.lookAt(lerp(-0.12, -0.25, look), lerp(1.55, 1.45, look), lerp(0.0, 0.15, look));
+
+    // phone rises from the patient's hand to the counter, screen up and tilted toward us
+    const pIn = span(t, 0, SCAN.phoneIn), pOut = span(t, SCAN.away[0], SCAN.away[1]);
+    S.phone.position.set(lerp(0.9, 0.2, pIn) + pOut * 0.9, lerp(0.55, 1.5, pIn) - pOut * 0.9, lerp(2.3, 0.5, pIn) + pOut * 0.9);
+    S.phone.rotation.set(lerp(-0.15, -Math.PI / 2 + 0.75, pIn), lerp(0.4, 0.1, pIn), lerp(0.2, -0.05, pIn));
+    S.phone.position.y += Math.sin(t * 2.2) * 0.008;
+
+    // scanner swings in from the staff side and aims down at the phone
+    const aim = span(t, SCAN.aim[0], SCAN.aim[1]);
+    const gunPos = new T3.Vector3(lerp(1.2, 0.2, aim), lerp(2.4, 2.18, aim), lerp(-1.2, -0.15, aim));
+    S.gun.position.copy(gunPos);
+    const target = S.phone.position.clone();
+    S.gun.lookAt(target);
+
+    // laser beam + scan line while scanning
+    const scanning = t >= SCAN.scan[0] && t < SCAN.scan[1];
+    S.beam.visible = scanning;
+    S.scanLine.visible = scanning;
+    if (scanning) {
+      const dir = target.clone().sub(gunPos), len = dir.length();
+      S.beam.scale.set(1, len, 1);
+      S.beam.position.copy(gunPos.clone().add(dir.clone().multiplyScalar(0.5)));
+      S.beam.quaternion.setFromUnitVectors(new T3.Vector3(0, -1, 0), dir.clone().normalize());
+      const sweep = (t - SCAN.scan[0]) / ((SCAN.scan[1] - SCAN.scan[0]) / 2);
+      S.scanLine.position.y = 0.115 + 0.15 * Math.cos(sweep * Math.PI); // sweeps over the QR code
+      S.beam.material.opacity = 0.14 + Math.sin(t * 40) * 0.04;
+    }
+    // success: screen turns green, a soft green flash
+    if (t >= SCAN.scan[1] && !S.paid) {
+      S.paid = true;
+      S.screenMat.map.dispose();
+      S.screenMat.map = S.canvasTex(512, 1104, (g, w2, h2) => S.drawPass(g, w2, h2, true));
+      S.dispMat.map.dispose();
+      S.dispMat.map = S.canvasTex(560, 400, (g, w2, h2) => S.drawDisplay(g, w2, h2, true));
+    }
+    S.flash.intensity = t >= SCAN.scan[1] ? 2.2 * Math.max(0, 1 - (t - SCAN.scan[1]) / 0.7) : 0;
+
+    // bag slides across the counter to the patient
+    // the bag is lifted from behind the counter, set down, then slid to the patient
+    const up = span(t, SCAN.bag[0], SCAN.bag[1]), slide = span(t, SCAN.bag[1], SCAN.bag[2]);
+    S.bag.visible = t >= SCAN.bag[0] - 0.05;
+    const lift = S.TOP + 0.02 + (1 - up) * 0.35 + Math.sin(up * Math.PI) * 0.06; // always above the counter top
+    S.bag.position.set(lerp(-0.85, -0.3, slide), up < 1 ? lift : S.TOP + 0.002, up < 1 ? lerp(-1.0, -0.3, up) : lerp(-0.3, 0.3, slide));
+    S.bag.rotation.y = lerp(0.25, -0.12, slide);
+
+    S.renderer.render(S.scene, S.camera);
+  }
+
+  /* ---- Benefits scene ---- */
+  function runBenefits() {
+    const race = $("#race"), slow = $("#rowSlow"), fast = $("#rowFast");
+    const sFill = $(".fill", slow), fFill = $(".fill", fast);
+    race.classList.remove("run"); slow.classList.remove("done"); fast.classList.remove("done");
+    sFill.style.transitionDuration = fFill.style.transitionDuration = "0s";
+    sFill.style.width = fFill.style.width = "0%";
+    $("#slowState").textContent = "Waiting…"; $("#fastState").textContent = "Scanning…";
+    $$(".tile").forEach(x => x.classList.remove("on")); $("#cta").classList.remove("on"); $("#benefitsPage").scrollTop = 0;
+    void race.offsetWidth;
+    const R = Math.max(1600, ms(2600));
+    later(() => {
+      race.classList.add("run");
+      fFill.style.transitionDuration = (R * .35) + "ms"; fFill.style.width = "100%";
+      sFill.style.transitionDuration = (R * 2.4) + "ms"; sFill.style.width = "100%";
+    }, 120);
+    later(() => { fast.classList.add("done"); $("#fastState").textContent = "Done ✓"; Snd.tap(); }, 120 + R * .35);
+    later(() => { $("#slowState").textContent = "Still in line…"; }, 120 + R * .7);
+    $$(".tile").forEach((x, k) => later(() => x.classList.add("on"), 120 + R * .45 + k * Math.max(90, ms(140))));
+    later(() => {
+      $("#cta").classList.add("on"); Snd.ending();
+      const pn = $("#benefitsPage");
+      if (pn.scrollHeight > pn.clientHeight + 4) pn.scrollTo({ top: pn.scrollHeight, behavior: reduce ? "auto" : "smooth" });
+    }, 120 + R * .45 + 6 * Math.max(90, ms(140)) + 150);
+    later(() => { slow.classList.add("done"); $("#slowState").textContent = "Done"; }, 120 + R * 2.4);
+  }
+
+  /* ---- Presenter controls ---- */
+  function back() {
+    stopPlay();
+    let i = state.step - 1;
+    if (i === 5) i = 4; // skip the "texting you" wait screen going backwards
+    if (i >= 0) go(i);
+  }
+  async function next() {
+    if (state.step === LAST) return;
+    stopPlay();
+    const t = state.run;
+    try { await STEPS[state.step].act(t); } catch (e) { if (e !== "cancel") console.error(e); }
+  }
+  function togglePlay() { state.playing ? stopPlay() : play(); }
+  $("#backBtn").addEventListener("click", back);
+  $("#mBack").addEventListener("click", back);
+  $("#doBtn").addEventListener("click", next);
+  $("#mNext").addEventListener("click", next);
+  $("#playBtn").addEventListener("click", togglePlay);
+  $("#mPlay").addEventListener("click", togglePlay);
+  $("#restartBtn").addEventListener("click", restart);
+  $("#mRestart").addEventListener("click", restart);
+  $("#mInfo").addEventListener("click", () => {
+    const c = $("#coach"), open = !c.classList.contains("open");
+    c.classList.toggle("open", open);
+    $("#mInfo").setAttribute("aria-expanded", open);
+    if (!open) requestAnimationFrame(layout);
+  });
+
+  document.addEventListener("keydown", e => {
+    const tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === " " && tag !== "button") { e.preventDefault(); togglePlay(); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); next(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); back(); }
+    else if (e.key === "r" || e.key === "R") restart();
+    else if (e.key === "m" || e.key === "M") toggleSound();
+  });
+
+  function setPlayUI() {
+    const label = state.playing ? "Pause" : state.step === LAST ? "Replay" : "Play";
+    $$(".playLabel").forEach(e => e.textContent = label + (e.closest("#playBtn") && !state.playing ? " demo" : ""));
+    $$(".playIcon").forEach(e => e.innerHTML = state.playing
+      ? '<rect x="3.5" y="2.5" width="3" height="11" rx="1" fill="currentColor"/><rect x="9.5" y="2.5" width="3" height="11" rx="1" fill="currentColor"/>'
+      : '<path d="M4 2.5v11l9-5.5z" fill="currentColor"/>');
+  }
+  async function play() {
+    if (state.step === LAST) reset();
+    stopPlay();
+    state.playing = true; setPlayUI();
+    const t = state.run;
+    try {
+      await wait(ms(400), t);
+      while (state.step < LAST) {
+        const from = state.step;
+        await STEPS[from].act(t);
+        while (state.step === from) await wait(60, t);
+        if (state.step < 8) await wait(ms(T.pause), t);
+      }
+    } catch (e) { if (e !== "cancel") console.error(e); }
+    if (t === state.run) { state.playing = false; setPlayUI(); }
+  }
+  function stopPlay() {
+    state.run++;
+    state.playing = false; setPlayUI();
+    finger.classList.remove("on", "tap");
+  }
+
+  function reset() {
+    ["#fn", "#ln", "#dob"].forEach(s => $(s).value = "");
+    $("#verifyErr").textContent = ""; $("#payErr").textContent = "";
+    state.picked = MEDS.map(() => true); state.method = null; state.counsel = null;
+    METHODS.forEach(m => $(`#m-${m.id}`).setAttribute("aria-pressed", "false"));
+    $("#counselYes").setAttribute("aria-pressed", "false");
+    $("#counselNo").setAttribute("aria-pressed", "false");
+    state.patient = { first: "Maria", last: "Lopez" };
+    paintPatient(); paintTotals(); paintDest();
+    $$(".page, .thread").forEach(p => p.scrollTop = 0);
+    finger.style.left = "50%"; finger.style.top = "85%";
+    state.rendered = -1;
+    go(0);
+  }
+  function restart() { stopPlay(); reset(); }
+
+  reset();
+  // Deep link: add #step-N to the address to open a specific step (e.g. #step-10 for the counter scene).
+  const deep = /^#step-(\d+)$/.exec(location.hash);
+  if (deep) { const n = Math.min(STEPS.length, Math.max(1, +deep[1])) - 1; if (n >= 4 && state.counsel === null) setCounsel("no"); if (n >= 4 && !state.method) setMethod("visa"); paintDest(); go(n); }
+  layout();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+})();
+</script>
+
+<script>
+  // Offline support: the service worker keeps a copy so the app opens with no signal.
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>
